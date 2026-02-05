@@ -1,7 +1,7 @@
 # ClipBook Core Feature Brainstorm
 
 **Date:** 2026-02-05
-**Status:** Complete
+**Status:** Implemented (v0.1.0)
 
 ## What We're Building
 
@@ -13,7 +13,7 @@ ClipBook is an Obsidian plugin for managing frequently-copied text — API keys,
 - Full values don't need to be visible most of the time
 - Current markdown offers no structured way to organize and quickly copy
 
-**Solution:** A custom code block processor (`clipbook`) that renders key-value pairs compactly with masked values and copy buttons.
+**Solution:** A custom code block processor (`clipbook`) that renders key-value pairs compactly with opt-in masked values and copy buttons.
 
 ## Why This Approach
 
@@ -32,10 +32,15 @@ Starting with the code block approach because:
 
 1. **Data lives in regular note files** — not plugin data.json. Searchable, syncable, editable without the plugin.
 2. **Code block format first** — ` ```clipbook ` blocks with `[Section]` headers and `key = value` pairs.
-3. **Values are masked by default** — show first/last few characters (e.g., `sk-...3xFq`). Hover or click to reveal.
-4. **One-click copy to system clipboard** — primary interaction. Content is for pasting into external apps/sites.
-5. **Offline/local only** — no network calls. All data stays in the vault.
-6. **Mobile compatible** — `isDesktopOnly: false`.
+3. **Masking is opt-in via `!` prefix** — `Key = !secret_value` masks the value; `Key = plain_value` shows in full. Not all values are secrets (e.g., region names), so masking by default would add unnecessary friction.
+4. **Masking algorithm** — first 3 + `···` + last 4 chars for long values (>10); first 2 + `···` for medium (4-10); `···` only for short (≤3).
+5. **Click/tap to toggle reveal** — works on both desktop and mobile (no hover-only interaction).
+6. **One-click copy to system clipboard** — primary interaction. Content is for pasting into external apps/sites.
+7. **Copy feedback** — inline icon swap (copy → checkmark for 1.5s) for success; Obsidian Notice for failure.
+8. **Parsing** — split on first `=` only (preserves values containing `=`). `#`/`;` lines are comments.
+9. **Orphan entries** — key-value pairs before the first `[Section]` render without a group header.
+10. **Offline/local only** — no network calls. All data stays in the vault.
+11. **Mobile compatible** — `isDesktopOnly: false`.
 
 ## Feature Spec (v0.1)
 
@@ -43,25 +48,30 @@ Starting with the code block approach because:
 
 ````markdown
 ```clipbook
-[OpenAI]
-API Key = sk-proj-abc123def456
-Org ID = org-xyz789
+API Token = !sk-proj-abc123def456
+Region = us-east-1
 
 [AWS]
-Access Key = AKIA1234EXAMPLE
-Secret Key = wJalrXUtnFEMI/K7MDENG
+Access Key = !AKIA1234EXAMPLE
+Secret Key = !wJalrXUtnFEMI/K7MDENG
 Region = us-east-1
+
+# This is a comment
+[GitHub]
+PAT = !ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Username = octocat
 ```
 ````
 
 ### Rendered output (in reading view)
 
 Compact grouped display:
-- Section headers (OpenAI, AWS) as visual group labels
-- Each key-value as a single compact row: `Label  ••••••3xFq  [copy icon]`
-- Masked values by default, full value on hover or toggle
+- Section headers (AWS, GitHub) as visual group labels
+- Each key-value as a single compact row: `Label  sk-···f456  [copy icon]`
+- Masked values (`!` prefix) hidden by default, click to reveal
+- Non-masked values shown in full
 - Copy button copies the full, unmasked value to clipboard
-- Visual feedback on successful copy (brief checkmark or "Copied!" flash)
+- Visual feedback: icon swap to checkmark for 1.5s on success
 
 ### Behaviors
 
@@ -78,14 +88,16 @@ Compact grouped display:
 - Import/export
 - Encryption of values at rest
 - Settings tab
+- Collapsible sections
+- "Copy all" or "copy section" buttons
 
-## Open Questions
+## Resolved Questions
 
-1. **Masking strategy:** How many characters to show? First 3 + last 3? Or fully hidden with a reveal toggle?
-2. **Multiple notes:** Should the plugin work on any note containing a `clipbook` block, or only a designated note?
-3. **Copy notification:** Use Obsidian Notice API or a subtle inline indicator?
-4. **Section nesting:** Support subsections or keep it flat?
+1. **Masking strategy:** Opt-in via `!` prefix. First 3 + last 4 chars for long values, progressively more hidden for shorter values.
+2. **Multiple notes:** Works on any note containing a `clipbook` block — no designated note needed.
+3. **Copy notification:** Inline icon swap for success, Obsidian Notice for failure.
+4. **Section nesting:** Flat only for v0.1.
 
 ## Next Steps
 
-Run `/workflows:plan` to create an implementation plan for v0.1.
+See implementation plan: `docs/plans/2026-02-05-feat-clipbook-code-block-processor-plan.md`
