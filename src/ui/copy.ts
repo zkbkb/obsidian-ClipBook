@@ -1,10 +1,11 @@
 import { Notice, setIcon } from "obsidian";
 
-const FEEDBACK_DURATION_MS = 1500;
+const DEFAULT_FEEDBACK_MS = 1500;
 
 export function attachCopyHandler(
 	buttonEl: HTMLElement,
-	getValue: () => string
+	getValue: () => string,
+	feedbackDuration = DEFAULT_FEEDBACK_MS
 ): void {
 	buttonEl.addEventListener("click", async (evt) => {
 		evt.stopPropagation();
@@ -16,7 +17,7 @@ export function attachCopyHandler(
 			setTimeout(() => {
 				setIcon(buttonEl, "copy");
 				buttonEl.removeClass("clipbook-copied");
-			}, FEEDBACK_DURATION_MS);
+			}, feedbackDuration);
 		} catch {
 			new Notice("Failed to copy to clipboard");
 		}

@@ -26,29 +26,42 @@ Modular plugin organized in `src/` with clear separation of concerns:
 
 ```text
 src/
-  main.ts          # Plugin entry point — registers code block processor (12 lines)
-  types.ts         # ClipBookEntry, ClipBookSection, ClipBookData interfaces
-  parser.ts        # INI-like parser: source string → structured data
+  main.ts              # Plugin entry point — loads settings, registers processor & commands (~30 lines)
+  settings.ts          # ClipBookSettings interface + DEFAULT_SETTINGS constant
+  types.ts             # ClipBookEntry, ClipBookSection, ClipBookData interfaces
+  parser.ts            # INI-like parser: source string → structured data (supports keyless entries)
+  commands.ts          # Command palette registrations (insert-block)
   ui/
-    renderer.ts    # DOM builder: parsed data → HTML with sections, rows, copy buttons
-    copy.ts        # Clipboard handler with icon-swap feedback
+    renderer.ts        # DOM builder: parsed data → HTML with sections, rows, copy buttons, add button
+    copy.ts            # Clipboard handler with icon-swap feedback
+    settings-tab.ts    # PluginSettingTab for Obsidian Settings UI
+    add-entry-modal.ts # Modal form for quick-adding entries
+    add-entry-writer.ts # Writes new entries back into code block source
   utils/
-    mask.ts        # Value masking (first 3 + ··· + last 4 chars)
-styles.css         # Theme-compatible CSS using Obsidian variables only
+    mask.ts            # Value masking (first 3 + ··· + last 4 chars)
+styles.css             # Theme-compatible CSS using Obsidian variables only
 ```
 
-**Data flow:** ` ```clipbook ` block → `parseClipBook(source)` → `ClipBookData` → `renderClipBook(data, el)` → DOM with copy handlers.
+**Data flow:** ` ```clipbook ` block → `parseClipBook(source, settings)` → `ClipBookData` → `renderClipBook(data, el, settings, app, ctx)` → DOM with copy handlers + add button.
+
+**Settings flow:** `plugin.settings` passed as parameter through `parseClipBook()` and `renderClipBook()` → sub-functions. Functions stay pure and testable.
+
+**Quick Add flow:** `+ Add entry` button → `AddEntryModal` (form) → `writeEntryToBlock()` → `editor.replaceRange()` or `vault.process()` fallback → Obsidian re-renders block.
 
 **Build pipeline:** `src/main.ts` → esbuild (`esbuild.config.mjs`) → `main.js` (CommonJS, ES2018 target). External deps (`obsidian`, `electron`, `@codemirror/*`, `@lezer/*`) are excluded from the bundle.
 
 ## Key Design Decisions
 
-- **`!` prefix for masking** — `Key = !secret` masks the value; `Key = plain` shows in full. Opt-in, not default.
+- **`!` prefix for masking** — `Key = !secret` masks the value; `Key = plain` shows in full. Opt-in by default, configurable via `defaultMasked` setting.
+- **Keyless entries** — lines without `=` become entries with no key label. Value takes full row width.
 - **Split on first `=` only** — values containing `=` (e.g., connection strings) are preserved.
 - **`#` / `;` for comments** — lines starting with these are skipped by the parser.
 - **Click/tap to reveal** — masked values toggle on click (works on mobile, no hover-only interaction).
+- **Auto-hide** — optional setting to re-mask revealed values after a configurable delay.
+- **Collapsible sections** — optional setting to make section headers toggleable with chevron icons.
 - **Copy feedback** — inline icon swap (copy → checkmark 1.5s) for success; Obsidian `Notice` for failure.
 - **Orphan entries** — key-value pairs before any `[Section]` render without a group header.
+- **Quick Add writes to source** — Modal form inserts entries into the code block using `getSectionInfo()` + `editor.replaceRange()`, with `vault.process()` fallback for reading mode.
 
 ## Key Conventions (from AGENTS.md)
 

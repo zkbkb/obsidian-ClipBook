@@ -26,6 +26,35 @@
 	margin-bottom: 2px;
 }
 
+/* Collapsible section header */
+.clipbook-section-header.clipbook-collapsible {
+	cursor: pointer;
+	user-select: none;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.clipbook-section-header.clipbook-collapsible:hover {
+	color: var(--text-normal);
+}
+
+.clipbook-chevron {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.clipbook-chevron svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* Collapsed entries */
+.clipbook-section-entries.clipbook-collapsed {
+	display: none;
+}
+
 /* Entry row */
 .clipbook-row {
 	display: flex;
@@ -61,6 +90,11 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	user-select: none;
+}
+
+/* Keyless entry value — takes full width */
+.clipbook-value-full {
+	flex: 1 1 100%;
 }
 
 .clipbook-masked {
@@ -101,4 +135,63 @@
 
 .clipbook-copied {
 	color: var(--text-success, var(--interactive-success));
+}
+
+/* Footer with add button */
+.clipbook-footer {
+	display: flex;
+	justify-content: center;
+	padding: 4px 12px 2px;
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 2px;
+}
+
+.clipbook-add-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+	user-select: none;
+}
+
+.clipbook-add-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.clipbook-add-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* Add Entry Modal */
+.clipbook-modal .setting-item {
+	border-top: none;
+	padding: 8px 0;
+}
+
+.clipbook-modal-wide-input .setting-item-control {
+	flex-grow: 1;
+}
+
+.clipbook-modal-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+/* Shake animation for validation feedback */
+@keyframes clipbook-shake {
+	0%, 100% { transform: translateX(0); }
+	20%, 60% { transform: translateX(-4px); }
+	40%, 80% { transform: translateX(4px); }
+}
+
+.clipbook-modal-shake {
+	animation: clipbook-shake 0.3s ease;
 }

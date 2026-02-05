@@ -1,6 +1,7 @@
 import { ClipBookData, ClipBookSection } from "./types";
+import { ClipBookSettings } from "./settings";
 
-export function parseClipBook(source: string): ClipBookData {
+export function parseClipBook(source: string, settings: ClipBookSettings): ClipBookData {
 	const lines = source.split("\n");
 	const sections: ClipBookData = [];
 	let currentSection: ClipBookSection = { name: null, entries: [] };
@@ -17,7 +18,6 @@ export function parseClipBook(source: string): ClipBookData {
 		const sectionMatch = line.match(/^\[(.+)\]$/);
 		if (sectionMatch) {
 			// Push previous section if it has entries OR if it has a name
-			// (named empty sections still get pushed)
 			if (currentSection.entries.length > 0 || currentSection.name !== null) {
 				sections.push(currentSection);
 			}
@@ -35,13 +35,30 @@ export function parseClipBook(source: string): ClipBookData {
 			if (value.startsWith("!")) {
 				masked = true;
 				value = value.substring(1);
+			} else {
+				masked = settings.defaultMasked;
 			}
 
-			if (key !== "") {
+			if (key !== "" || value !== "") {
 				currentSection.entries.push({ key, value, masked });
 			}
+			continue;
 		}
-		// Lines without = are silently skipped
+
+		// Keyless entry: line without = (e.g. "!sk-abc123" or "plain-value")
+		let value = line;
+		let masked = false;
+
+		if (value.startsWith("!")) {
+			masked = true;
+			value = value.substring(1);
+		} else {
+			masked = settings.defaultMasked;
+		}
+
+		if (value !== "") {
+			currentSection.entries.push({ key: "", value, masked });
+		}
 	}
 
 	// Push the final section
