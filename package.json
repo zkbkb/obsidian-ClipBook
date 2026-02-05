@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "obsidian-clipbook",
+	"version": "0.1.0",
+	"description": "Obsidian plugin for managing copyable text snippets in structured code blocks",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
