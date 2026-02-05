@@ -1,7 +1,12 @@
 import { Plugin } from "obsidian";
+import { parseClipBook } from "./parser";
+import { renderClipBook } from "./ui/renderer";
 
 export default class ClipBookPlugin extends Plugin {
 	async onload() {
-		// Code block processor will be registered here
+		this.registerMarkdownCodeBlockProcessor("clipbook", (source, el) => {
+			const data = parseClipBook(source);
+			renderClipBook(data, el);
+		});
 	}
 }

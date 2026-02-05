@@ -1,8 +1,104 @@
-/*
+/* ClipBook – Code Block Renderer Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.clipbook-container {
+	padding: 8px 0;
+}
 
-If your plugin does not need CSS, delete this file.
+.clipbook-empty {
+	color: var(--text-muted);
+	font-style: italic;
+	padding: 8px 12px;
+}
 
-*/
+/* Section header */
+.clipbook-section {
+	margin-bottom: 4px;
+}
+
+.clipbook-section-header {
+	font-size: var(--font-smaller);
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding: 6px 12px 2px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 2px;
+}
+
+/* Entry row */
+.clipbook-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 3px 12px;
+	border-radius: var(--radius-s);
+}
+
+.clipbook-row:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Key label */
+.clipbook-key {
+	flex: 0 0 auto;
+	min-width: 80px;
+	max-width: 200px;
+	font-weight: 500;
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Value */
+.clipbook-value {
+	flex: 1 1 auto;
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	user-select: none;
+}
+
+.clipbook-masked {
+	cursor: pointer;
+}
+
+.clipbook-masked:hover {
+	color: var(--text-normal);
+}
+
+.clipbook-revealed {
+	color: var(--text-normal);
+	user-select: text;
+}
+
+/* Copy button */
+.clipbook-copy-btn {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	color: var(--text-muted);
+}
+
+.clipbook-copy-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.clipbook-copy-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.clipbook-copied {
+	color: var(--text-success, var(--interactive-success));
+}
