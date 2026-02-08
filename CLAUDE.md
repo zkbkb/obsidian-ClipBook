@@ -62,6 +62,42 @@ styles.css         # Theme-compatible CSS using Obsidian variables only
 - CSS must use Obsidian CSS variables only — no hardcoded colors.
 - Bundle everything into `main.js`; no unbundled runtime dependencies.
 
-## Version Bumping
+## Release Process
 
-`npm version [patch|minor|major]` triggers `version-bump.mjs` which updates `manifest.json` and `versions.json`. GitHub release tags must match `manifest.json` version exactly (no `v` prefix).
+ClipBook follows [Semantic Versioning](https://semver.org/) and uses [Keep a Changelog](https://keepachangelog.com/) format for CHANGELOG.md.
+
+### Version Bumping
+
+1. **Update CHANGELOG.md** — Move items from `[Unreleased]` to a new version section with today's date:
+
+   ```markdown
+   ## [0.2.0] - 2026-02-08
+
+   ### Added
+   - Feature description
+
+   [0.2.0]: https://github.com/zkbkb/obsidian-ClipBook/compare/v0.1.0...v0.2.0
+   ```
+
+2. **Bump version** — Run `npm version [patch|minor|major]`. This:
+   - Updates `package.json` version
+   - Triggers `version-bump.mjs` → updates `manifest.json` and `versions.json`
+   - Creates a git commit with the new version
+   - Creates a git tag (e.g., `0.2.0`)
+
+3. **Push with tags** — `git push && git push --tags`
+
+4. **GitHub Actions release** — The `.github/workflows/release.yml` workflow:
+   - Triggers on tag push
+   - Runs `npm ci && npm run build`
+   - Creates a GitHub release (draft) with `main.js`, `manifest.json`, `styles.css`
+   - Uses tag name as release title, auto-generates notes from commits
+
+5. **Publish release** — Review the draft release on GitHub and click "Publish release"
+
+### Important Notes
+
+- **Tag format:** No `v` prefix (use `0.2.0`, not `v0.2.0`)
+- **Tag = version:** Git tag must exactly match `manifest.json` version
+- **Conventional commits:** Use `feat:`, `fix:`, `docs:`, etc. for clean changelog generation
+- **Draft first:** Releases are created as drafts — review before publishing
