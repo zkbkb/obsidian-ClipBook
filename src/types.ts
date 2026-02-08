@@ -1,5 +1,5 @@
 export interface ClipBookEntry {
-	key: string;
+	key: string | null; // null = keyless entry
 	value: string;
 	masked: boolean;
 }

@@ -37,11 +37,27 @@ export function parseClipBook(source: string): ClipBookData {
 				value = value.substring(1);
 			}
 
-			if (key !== "") {
-				currentSection.entries.push({ key, value, masked });
+			// Empty key = keyless entry; non-empty key = named entry
+			if (key !== "" || value !== "") {
+				currentSection.entries.push({
+					key: key === "" ? null : key,
+					value,
+					masked,
+				});
 			}
+			continue;
 		}
-		// Lines without = are silently skipped
+
+		// Bare line (no =) → keyless entry
+		let bareValue = line;
+		let bareMasked = false;
+		if (bareValue.startsWith("!")) {
+			bareMasked = true;
+			bareValue = bareValue.substring(1);
+		}
+		if (bareValue !== "") {
+			currentSection.entries.push({ key: null, value: bareValue, masked: bareMasked });
+		}
 	}
 
 	// Push the final section

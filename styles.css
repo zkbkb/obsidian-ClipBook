@@ -10,12 +10,15 @@
 	padding: 8px 12px;
 }
 
-/* Section header */
+/* Section */
 .clipbook-section {
 	margin-bottom: 4px;
 }
 
+/* Section header (collapsible) */
 .clipbook-section-header {
+	display: flex;
+	align-items: center;
 	font-size: var(--font-smaller);
 	font-weight: 600;
 	color: var(--text-muted);
@@ -24,6 +27,23 @@
 	padding: 6px 12px 2px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	margin-bottom: 2px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.clipbook-section-header:hover {
+	color: var(--text-normal);
+}
+
+.clipbook-chevron {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 4px;
+}
+
+.clipbook-chevron svg {
+	width: 12px;
+	height: 12px;
 }
 
 /* Entry row */
@@ -61,6 +81,11 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	user-select: none;
+}
+
+/* Keyless entry value — takes full width */
+.clipbook-value-full {
+	flex: 1 1 100%;
 }
 
 .clipbook-masked {
@@ -101,4 +126,118 @@
 
 .clipbook-copied {
 	color: var(--text-success, var(--interactive-success));
+}
+
+/* Quick-add button */
+.clipbook-add-btn {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	margin-top: 4px;
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: var(--radius-s);
+	user-select: none;
+}
+
+.clipbook-add-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.clipbook-add-btn-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.clipbook-add-btn-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* Quick-add form */
+.clipbook-add-form {
+	padding: 8px 12px;
+	margin-top: 4px;
+	border-top: 1px solid var(--background-modifier-border);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.clipbook-add-form-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.clipbook-add-form-label {
+	flex: 0 0 60px;
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+}
+
+.clipbook-add-form-input {
+	flex: 1 1 auto;
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.clipbook-add-form-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.clipbook-add-form-checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+	margin-left: 68px;
+}
+
+.clipbook-add-form-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 2px;
+}
+
+.clipbook-add-form-cancel,
+.clipbook-add-form-submit {
+	font-size: var(--font-smaller);
+	padding: 4px 12px;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.clipbook-add-form-cancel:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.clipbook-add-form-submit {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.clipbook-add-form-submit:hover {
+	opacity: 0.9;
+}
+
+.clipbook-add-form-submit:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
