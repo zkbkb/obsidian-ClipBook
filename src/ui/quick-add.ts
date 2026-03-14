@@ -1,8 +1,11 @@
 import {
 	App,
+	Editor,
 	MarkdownPostProcessorContext,
 	MarkdownView,
+	Notice,
 	setIcon,
+	TFile,
 } from "obsidian";
 import { ClipBookData } from "../types";
 import { ClipBookSettings } from "../settings";
@@ -14,10 +17,6 @@ export function renderQuickAddButton(
 	ctx: MarkdownPostProcessorContext,
 	app: App
 ): void {
-	// Only render if we can write back to the source
-	const sectionInfo = ctx.getSectionInfo(containerEl);
-	if (!sectionInfo) return;
-
 	const addBtn = containerEl.createDiv({ cls: "clipbook-add-btn" });
 	const iconEl = addBtn.createSpan({ cls: "clipbook-add-btn-icon" });
 	setIcon(iconEl, "plus");
@@ -177,21 +176,31 @@ function writeEntryToSource(
 	value: string,
 	masked: boolean
 ): void {
-	const view = app.workspace.getActiveViewOfType(MarkdownView);
-	if (!view) return;
-
-	const editor = view.editor;
-	const sectionInfo = ctx.getSectionInfo(containerEl);
-	if (!sectionInfo) return;
-
-	// sectionInfo.lineStart = opening ``` line, sectionInfo.lineEnd = closing ``` line
-	const blockStart = sectionInfo.lineStart; // ```clipbook line
-	const blockEnd = sectionInfo.lineEnd;     // closing ``` line
-
 	const entryLine = buildEntryLine(key, value, masked);
 
+	// Try editor-based write first (works in edit/live-preview mode)
+	const view = app.workspace.getActiveViewOfType(MarkdownView);
+	const sectionInfo = ctx.getSectionInfo(containerEl);
+
+	if (view && sectionInfo) {
+		writeViaEditor(view.editor, sectionInfo, section, entryLine);
+		return;
+	}
+
+	// Fallback: write via vault.process (works in reading mode)
+	writeViaVault(app, ctx, section, entryLine);
+}
+
+function writeViaEditor(
+	editor: Editor,
+	sectionInfo: { lineStart: number; lineEnd: number },
+	section: string | null,
+	entryLine: string
+): void {
+	const blockStart = sectionInfo.lineStart;
+	const blockEnd = sectionInfo.lineEnd;
+
 	if (section === null) {
-		// Orphan entry — insert right after the opening ``` line
 		const insertLine = blockStart + 1;
 		editor.replaceRange(
 			entryLine + "\n",
@@ -201,45 +210,21 @@ function writeEntryToSource(
 		return;
 	}
 
-	// Check if the target section already exists in the source
 	const sourceLines: string[] = [];
 	for (let i = blockStart + 1; i < blockEnd; i++) {
 		sourceLines.push(editor.getLine(i));
 	}
 
-	// Find the target section's last entry line
-	let sectionHeaderLine = -1;
-	let lastEntryLine = -1;
-	const sectionRegex = /^\[(.+)\]$/;
+	const { sectionFound, insertOffset } = findInsertionOffset(sourceLines, section);
 
-	for (let i = 0; i < sourceLines.length; i++) {
-		const trimmed = sourceLines[i].trim();
-		const match = trimmed.match(sectionRegex);
-		if (match && match[1].trim() === section) {
-			sectionHeaderLine = blockStart + 1 + i;
-			lastEntryLine = sectionHeaderLine;
-			// Scan forward to find last non-empty, non-comment, non-section line
-			for (let j = i + 1; j < sourceLines.length; j++) {
-				const t = sourceLines[j].trim();
-				if (t.match(sectionRegex)) break; // hit next section
-				if (t !== "" && !t.startsWith("#") && !t.startsWith(";")) {
-					lastEntryLine = blockStart + 1 + j;
-				}
-			}
-			break;
-		}
-	}
-
-	if (sectionHeaderLine !== -1) {
-		// Existing section — insert after the last entry line
-		const insertLine = lastEntryLine + 1;
+	if (sectionFound) {
+		const insertLine = blockStart + 1 + insertOffset;
 		editor.replaceRange(
 			entryLine + "\n",
 			{ line: insertLine, ch: 0 },
 			{ line: insertLine, ch: 0 }
 		);
 	} else {
-		// New section — insert before the closing ``` line
 		const insertLine = blockEnd;
 		editor.replaceRange(
 			`\n[${section}]\n${entryLine}\n`,
@@ -247,4 +232,93 @@ function writeEntryToSource(
 			{ line: insertLine, ch: 0 }
 		);
 	}
+}
+
+function writeViaVault(
+	app: App,
+	ctx: MarkdownPostProcessorContext,
+	section: string | null,
+	entryLine: string
+): void {
+	const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
+	if (!(file instanceof TFile)) {
+		new Notice("Cannot add entry: file not found.");
+		return;
+	}
+
+	app.vault.process(file, (content) => {
+		const lines = content.split("\n");
+		const block = findClipBookBlock(lines);
+		if (!block) {
+			new Notice("Cannot add entry: clipbook block not found.");
+			return content;
+		}
+
+		const blockLines = lines.slice(block.start + 1, block.end);
+
+		if (section === null) {
+			lines.splice(block.start + 1, 0, entryLine);
+			return lines.join("\n");
+		}
+
+		const { sectionFound, insertOffset } = findInsertionOffset(blockLines, section);
+
+		if (sectionFound) {
+			lines.splice(block.start + 1 + insertOffset, 0, entryLine);
+		} else {
+			lines.splice(block.end, 0, "", `[${section}]`, entryLine);
+		}
+
+		return lines.join("\n");
+	});
+}
+
+function findInsertionOffset(
+	blockLines: string[],
+	section: string
+): { sectionFound: boolean; insertOffset: number } {
+	const sectionRegex = /^\[(.+)\]$/;
+	let sectionHeaderIdx = -1;
+	let lastEntryIdx = -1;
+
+	for (let i = 0; i < blockLines.length; i++) {
+		const trimmed = blockLines[i].trim();
+		const match = trimmed.match(sectionRegex);
+		if (match && match[1].trim() === section) {
+			sectionHeaderIdx = i;
+			lastEntryIdx = i;
+			for (let j = i + 1; j < blockLines.length; j++) {
+				const t = blockLines[j].trim();
+				if (t.match(sectionRegex)) break;
+				if (t !== "" && !t.startsWith("#") && !t.startsWith(";")) {
+					lastEntryIdx = j;
+				}
+			}
+			break;
+		}
+	}
+
+	if (sectionHeaderIdx !== -1) {
+		return { sectionFound: true, insertOffset: lastEntryIdx + 1 };
+	}
+	return { sectionFound: false, insertOffset: blockLines.length };
+}
+
+function findClipBookBlock(
+	lines: string[]
+): { start: number; end: number } | null {
+	let start = -1;
+	for (let i = 0; i < lines.length; i++) {
+		const trimmed = lines[i].trim();
+		if (start === -1) {
+			if (trimmed === "```clipbook") {
+				start = i;
+			}
+		} else {
+			if (trimmed === "```") {
+				return { start, end: i };
+			}
+		}
+	}
+	return null;
 }

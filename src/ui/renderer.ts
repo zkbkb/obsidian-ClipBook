@@ -110,7 +110,9 @@ function renderEntry(
 	let revealed = false;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-	if (entry.masked) {
+	const isMasked = entry.masked || settings.defaultMasked;
+
+	if (isMasked) {
 		valueEl.setText(maskValue(entry.value));
 		valueEl.addClass("clipbook-masked");
 		valueEl.setAttribute("aria-label", "Click to reveal value");

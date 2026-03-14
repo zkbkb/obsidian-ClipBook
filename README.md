@@ -63,10 +63,17 @@ Open **Settings > ClipBook** to configure:
 
 | Setting                     | Default   | Description                                                        |
 | --------------------------- | --------- | ------------------------------------------------------------------ |
+| Mask all values by default  | Off       | Mask every value, not just `!`-prefixed ones.                      |
 | Auto-hide revealed values   | 5 seconds | Re-mask revealed values after this duration (3s/5s/10s/30s/Never). |
 | Hide on tab switch          | On        | Re-mask all revealed values when switching tabs or windows.        |
 | Sections start collapsed    | Off       | Whether sections are collapsed by default.                         |
 | Mask new entries by default | On        | Whether the mask checkbox is checked by default in quick-add.      |
+
+## Commands
+
+| Command                          | Description                            |
+| -------------------------------- | -------------------------------------- |
+| ClipBook: Insert clipbook block  | Inserts a template clipbook code block |
 
 ## Installation
 

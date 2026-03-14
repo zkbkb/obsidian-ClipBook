@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import type ClipBookPlugin from "./main";
 
 export interface ClipBookSettings {
+	defaultMasked: boolean;       // mask all values, not just !-prefixed
 	autoHideTimeout: number;      // seconds, 0 = never
 	hideOnTabSwitch: boolean;     // re-mask on blur/tab switch
 	defaultCollapsed: boolean;    // sections start collapsed
@@ -9,6 +10,7 @@ export interface ClipBookSettings {
 }
 
 export const DEFAULT_SETTINGS: ClipBookSettings = {
+	defaultMasked: false,
 	autoHideTimeout: 5,
 	hideOnTabSwitch: true,
 	defaultCollapsed: false,
@@ -26,6 +28,20 @@ export class ClipBookSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName("Mask all values by default")
+			.setDesc(
+				"When enabled, all values are masked — not just those with the ! prefix"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.defaultMasked)
+					.onChange(async (value) => {
+						this.plugin.settings.defaultMasked = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName("Auto-hide revealed values")
