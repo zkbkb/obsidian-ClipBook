@@ -1,5 +1,11 @@
 # vscode
 .vscode 
+docs/
+.github/
+.claude/
+AGENTS.md
+CHANGELOG.md
+CLAUDE.md
 
 # Intellij
 *.iml
@@ -20,3 +26,4 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
