@@ -43,22 +43,45 @@ export class ClipBookSettingTab extends PluginSettingTab {
 					})
 			);
 
+		const autoHideEnabled = this.plugin.settings.autoHideTimeout > 0;
+		// Remember last non-zero delay so toggling off/on doesn't lose it
+		let lastDelay = autoHideEnabled
+			? this.plugin.settings.autoHideTimeout
+			: DEFAULT_SETTINGS.autoHideTimeout;
+
 		new Setting(containerEl)
 			.setName("Auto-hide revealed values")
-			.setDesc("Re-mask revealed values after this duration")
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption("3", "3 seconds")
-					.addOption("5", "5 seconds")
-					.addOption("10", "10 seconds")
-					.addOption("30", "30 seconds")
-					.addOption("0", "Never")
-					.setValue(String(this.plugin.settings.autoHideTimeout))
+			.setDesc(
+				"Automatically re-mask revealed values after a delay."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(autoHideEnabled)
 					.onChange(async (value) => {
-						this.plugin.settings.autoHideTimeout = Number(value);
+						this.plugin.settings.autoHideTimeout = value
+							? lastDelay
+							: 0;
+						await this.plugin.saveSettings();
+						delaySetting.settingEl.toggle(value);
+					})
+			);
+
+		const delaySetting = new Setting(containerEl)
+			.setName("Auto-hide delay")
+			.setDesc("Seconds before a revealed value is re-masked.")
+			.addSlider((slider) =>
+				slider
+					.setLimits(1, 30, 1)
+					.setValue(lastDelay)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						lastDelay = value;
+						this.plugin.settings.autoHideTimeout = value;
 						await this.plugin.saveSettings();
 					})
 			);
+
+		delaySetting.settingEl.toggle(autoHideEnabled);
 
 		new Setting(containerEl)
 			.setName("Hide on tab switch")
