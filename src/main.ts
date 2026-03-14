@@ -8,7 +8,7 @@ import {
 } from "./settings";
 
 export default class ClipBookPlugin extends Plugin {
-	settings: ClipBookSettings;
+	settings!: ClipBookSettings;
 
 	async onload() {
 		await this.loadSettings();

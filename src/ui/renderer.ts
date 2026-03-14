@@ -9,11 +9,17 @@ import { maskValue } from "../utils/mask";
 import { attachCopyHandler } from "./copy";
 import { renderQuickAddButton } from "./quick-add";
 
-// Global set of hide callbacks for blur-based auto-hide
-const revealedHideCallbacks = new Set<() => void>();
+// Global set of hide callbacks for blur-based auto-hide.
+// Each entry maps a hide function to the DOM element it controls,
+// allowing stale callbacks (for removed elements) to be cleaned up.
+const revealedHideCallbacks = new Map<() => void, HTMLElement>();
 
 export function hideAllRevealed(): void {
-	for (const hide of revealedHideCallbacks) {
+	for (const [hide, el] of revealedHideCallbacks) {
+		if (!document.contains(el)) {
+			revealedHideCallbacks.delete(hide);
+			continue;
+		}
 		hide();
 	}
 }
@@ -140,7 +146,7 @@ function renderEntry(
 
 			if (revealed) {
 				// Register for blur-based hiding
-				revealedHideCallbacks.add(hideValue);
+				revealedHideCallbacks.set(hideValue, valueEl);
 
 				// Timer-based auto-hide
 				if (settings.autoHideTimeout > 0) {

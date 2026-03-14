@@ -6,18 +6,24 @@ export function attachCopyHandler(
 	buttonEl: HTMLElement,
 	getValue: () => string
 ): void {
+	let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
 	buttonEl.addEventListener("click", async (evt) => {
 		evt.stopPropagation();
 		try {
 			await navigator.clipboard.writeText(getValue());
+			// Cancel any pending feedback reset from a previous click
+			if (feedbackTimer) clearTimeout(feedbackTimer);
 			// Success: swap icon to checkmark
 			setIcon(buttonEl, "check");
 			buttonEl.addClass("clipbook-copied");
-			setTimeout(() => {
+			feedbackTimer = setTimeout(() => {
 				setIcon(buttonEl, "copy");
 				buttonEl.removeClass("clipbook-copied");
+				feedbackTimer = null;
 			}, FEEDBACK_DURATION_MS);
-		} catch {
+		} catch (error) {
+			console.error("ClipBook: copy failed", error);
 			new Notice("Failed to copy to clipboard");
 		}
 	});

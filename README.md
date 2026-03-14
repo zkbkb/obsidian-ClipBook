@@ -22,7 +22,7 @@ Username = octocat
 ```
 ````
 
-In reading view, ClipBook renders this as a compact, structured list with copy buttons on each row.
+In reading view, ClipBook renders this as a compact, structured list with copy buttons on each row. Sections are collapsible, masked values can be revealed with a click, and a quick-add button lets you append entries without editing the source.
 
 ## Syntax
 
@@ -30,7 +30,9 @@ In reading view, ClipBook renders this as a compact, structured list with copy b
 | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `Key = Value`                | A copyable entry. The full value is copied on click.                                                 |
 | `Key = !Value`               | A masked entry. The value is hidden by default (e.g., `sk-···f456`). Click the value to reveal it.   |
-| `[Section Name]`             | A section header to group entries visually.                                                          |
+| `!Value`                     | A keyless masked entry (bare line, no key label).                                                    |
+| `= Value`                    | A keyless plain entry (no key label).                                                                |
+| `[Section Name]`             | A section header to group entries visually. Click to collapse/expand.                                |
 | `# comment` or `; comment`   | A comment line, ignored by the parser.                                                               |
 
 - Entries before the first `[Section]` render without a group header.
@@ -45,7 +47,26 @@ Prefix a value with `!` to mask it. Masked values show a truncated form:
 - Medium values (4-10 chars): first 2 + `···`
 - Short values (1-3 chars): `···`
 
-Click a masked value to reveal the full text. Click again to re-mask.
+Click a masked value to reveal the full text. Click again to re-mask. Revealed values are automatically re-masked after a configurable timeout or when you switch tabs.
+
+## Collapsible sections
+
+Sections with a `[Header]` can be collapsed and expanded by clicking the header. You can set sections to start collapsed by default in settings.
+
+## Quick add
+
+Click the **+ Add** button at the bottom of any clipbook block to append a new entry. The inline form lets you choose a section, key, value, and mask toggle, then writes directly back to the markdown source.
+
+## Settings
+
+Open **Settings > ClipBook** to configure:
+
+| Setting                     | Default   | Description                                                        |
+| --------------------------- | --------- | ------------------------------------------------------------------ |
+| Auto-hide revealed values   | 5 seconds | Re-mask revealed values after this duration (3s/5s/10s/30s/Never). |
+| Hide on tab switch          | On        | Re-mask all revealed values when switching tabs or windows.        |
+| Sections start collapsed    | Off       | Whether sections are collapsed by default.                         |
+| Mask new entries by default | On        | Whether the mask checkbox is checked by default in quick-add.      |
 
 ## Installation
 
@@ -61,4 +82,3 @@ Then enable ClipBook in **Settings > Community plugins**.
 
 - Masking is visual only, not encryption. Values are stored as plain text in your notes and held in memory while rendered.
 - Multiline values (SSH keys, certificates) are not supported. Each entry must be a single line.
-- No settings or configuration in v0.1. Masking thresholds and feedback duration are fixed defaults.
