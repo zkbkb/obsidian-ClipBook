@@ -28,6 +28,7 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 	margin-bottom: 2px;
 	cursor: pointer;
+	-webkit-user-select: none;
 	user-select: none;
 }
 
@@ -80,6 +81,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	-webkit-user-select: none;
 	user-select: none;
 }
 
@@ -98,6 +100,7 @@
 
 .clipbook-revealed {
 	color: var(--text-normal);
+	-webkit-user-select: text;
 	user-select: text;
 }
 
@@ -139,6 +142,7 @@
 	color: var(--text-muted);
 	cursor: pointer;
 	border-radius: var(--radius-s);
+	-webkit-user-select: none;
 	user-select: none;
 }
 
