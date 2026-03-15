@@ -61,12 +61,13 @@ function renderQuickAddForm(
 		cls: "clipbook-add-form-label",
 		text: "Section",
 	});
+	const listId = "clipbook-sections-" + Date.now();
 	const sectionInput = sectionRow.createEl("input", {
 		cls: "clipbook-add-form-input",
 		attr: {
 			type: "text",
 			placeholder: "(none — add as orphan)",
-			list: "clipbook-sections-list",
+			list: listId,
 		},
 	});
 	// Datalist for existing section suggestions
@@ -75,7 +76,7 @@ function renderQuickAddForm(
 		.filter((n): n is string => n !== null);
 	if (existingSections.length > 0) {
 		const datalist = formEl.createEl("datalist", {
-			attr: { id: "clipbook-sections-list" },
+			attr: { id: listId },
 		});
 		for (const name of existingSections) {
 			datalist.createEl("option", { attr: { value: name } });

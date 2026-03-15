@@ -47,6 +47,11 @@
 	height: 12px;
 }
 
+/* Collapsed entries container */
+.clipbook-entries.clipbook-collapsed {
+	display: none;
+}
+
 /* Entry row */
 .clipbook-row {
 	display: flex;

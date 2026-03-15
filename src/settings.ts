@@ -19,10 +19,23 @@ export const DEFAULT_SETTINGS: ClipBookSettings = {
 
 export class ClipBookSettingTab extends PluginSettingTab {
 	plugin: ClipBookPlugin;
+	private delayInputEl: HTMLInputElement | null = null;
 
 	constructor(app: App, plugin: ClipBookPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	hide(): void {
+		if (!this.delayInputEl) return;
+		// If auto-hide is disabled, nothing to validate
+		if (this.plugin.settings.autoHideTimeout === 0) return;
+		// If delay input is empty/invalid on exit, reset to default 5s
+		const num = parseInt(this.delayInputEl.value, 10);
+		if (isNaN(num) || num < 1) {
+			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
+			this.plugin.saveSettings();
+		}
 	}
 
 	display(): void {
@@ -67,19 +80,21 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			);
 
 		const delaySetting = new Setting(containerEl)
-			.setName("Auto-hide delay")
+			.setName("Auto-hide delay (s)")
 			.setDesc("Seconds before a revealed value is re-masked.")
-			.addSlider((slider) =>
-				slider
-					.setLimits(1, 30, 1)
-					.setValue(lastDelay)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						lastDelay = value;
-						this.plugin.settings.autoHideTimeout = value;
+			.addText((text) => {
+				this.delayInputEl = text.inputEl;
+				text
+					.setPlaceholder("5")
+					.setValue(String(lastDelay))
+					.onChange(async (raw) => {
+						const num = parseInt(raw, 10);
+						if (isNaN(num) || num < 1) return;
+						lastDelay = num;
+						this.plugin.settings.autoHideTimeout = num;
 						await this.plugin.saveSettings();
-					})
-			);
+					});
+			});
 
 		delaySetting.settingEl.toggle(autoHideEnabled);
 

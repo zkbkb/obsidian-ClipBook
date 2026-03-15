@@ -2,11 +2,8 @@
 .vscode 
 docs/
 docs/**
-.github/
-.github/**
 .claude/
 AGENTS.md
-CHANGELOG.md
 CLAUDE.md
 
 # Intellij

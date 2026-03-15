@@ -69,7 +69,7 @@ function renderSection(
 		setIcon(chevronEl, collapsed ? "chevron-right" : "chevron-down");
 
 		const entriesEl = sectionEl.createDiv({ cls: "clipbook-entries" });
-		if (collapsed) entriesEl.style.display = "none";
+		if (collapsed) entriesEl.addClass("clipbook-collapsed");
 
 		headerEl.addEventListener("click", () => {
 			collapsed = !collapsed;
@@ -77,7 +77,7 @@ function renderSection(
 				chevronEl,
 				collapsed ? "chevron-right" : "chevron-down"
 			);
-			entriesEl.style.display = collapsed ? "none" : "";
+			entriesEl.toggleClass("clipbook-collapsed", collapsed);
 		});
 
 		for (const entry of section.entries) {
