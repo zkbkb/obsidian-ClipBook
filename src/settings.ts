@@ -35,7 +35,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		if (isNaN(num) || num < 1) {
 			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
 			this.plugin.saveSettings().catch(() => {
-				new Notice("ClipBook: Failed to save settings.");
+				new Notice("Clipbook: failed to save settings.");
 			});
 		}
 	}
