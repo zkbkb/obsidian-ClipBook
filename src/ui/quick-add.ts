@@ -247,7 +247,7 @@ function writeViaVault(
 		return;
 	}
 
-	app.vault.process(file, (content) => {
+	void app.vault.process(file, (content) => {
 		const lines = content.split("\n");
 		const block = findClipBookBlock(lines);
 		if (!block) {

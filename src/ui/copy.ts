@@ -8,10 +8,9 @@ export function attachCopyHandler(
 ): void {
 	let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-	buttonEl.addEventListener("click", async (evt) => {
+	buttonEl.addEventListener("click", (evt) => {
 		evt.stopPropagation();
-		try {
-			await navigator.clipboard.writeText(getValue());
+		navigator.clipboard.writeText(getValue()).then(() => {
 			// Cancel any pending feedback reset from a previous click
 			if (feedbackTimer) clearTimeout(feedbackTimer);
 			// Success: swap icon to checkmark
@@ -22,9 +21,9 @@ export function attachCopyHandler(
 				buttonEl.removeClass("clipbook-copied");
 				feedbackTimer = null;
 			}, FEEDBACK_DURATION_MS);
-		} catch (error) {
+		}).catch((error) => {
 			console.error("ClipBook: copy failed", error);
 			new Notice("Failed to copy to clipboard");
-		}
+		});
 	});
 }

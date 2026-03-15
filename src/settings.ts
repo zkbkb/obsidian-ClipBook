@@ -34,7 +34,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		const num = parseInt(this.delayInputEl.value, 10);
 		if (isNaN(num) || num < 1) {
 			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
-			this.plugin.saveSettings();
+			void this.plugin.saveSettings();
 		}
 	}
 
@@ -45,7 +45,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Mask all values by default")
 			.setDesc(
-				"When enabled, all values are masked — not just those with the ! prefix"
+				"When enabled, all values are masked, not just those with the ! prefix"
 			)
 			.addToggle((toggle) =>
 				toggle

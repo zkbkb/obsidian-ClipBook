@@ -92,7 +92,7 @@ export function replaceEntryInSource(
 		return;
 	}
 
-	app.vault.process(file, (content) => {
+	void app.vault.process(file, (content) => {
 		const lines = content.split("\n");
 		// Find the clipbook block that contains this entry
 		let blockStart = -1;
