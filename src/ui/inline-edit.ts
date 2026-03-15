@@ -82,6 +82,4 @@ export function replaceEntryInSource(
 		);
 		return;
 	}
-
-	return;
 }

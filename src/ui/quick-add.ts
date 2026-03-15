@@ -139,7 +139,7 @@ function renderQuickAddForm(
 		const key = keyInput.value.trim() || null;
 		const masked = maskCheckbox.checked;
 
-		writeEntryToSource(app, ctx, containerEl, data, section, key, value, masked);
+		writeEntryToSource(app, ctx, containerEl, section, key, value, masked);
 		onClose();
 	});
 
@@ -169,7 +169,6 @@ function writeEntryToSource(
 	app: App,
 	ctx: MarkdownPostProcessorContext,
 	containerEl: HTMLElement,
-	data: ClipBookData,
 	section: string | null,
 	key: string | null,
 	value: string,
@@ -185,8 +184,6 @@ function writeEntryToSource(
 		writeViaEditor(view.editor, sectionInfo, section, entryLine);
 		return;
 	}
-
-	return;
 }
 
 function writeViaEditor(
