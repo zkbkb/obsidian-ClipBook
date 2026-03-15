@@ -5,7 +5,6 @@ import {
 	MarkdownView,
 	Notice,
 	setIcon,
-	TFile,
 } from "obsidian";
 import { ClipBookData } from "../types";
 import { ClipBookSettings } from "../settings";
@@ -141,8 +140,12 @@ function renderQuickAddForm(
 		const key = keyInput.value.trim() || null;
 		const masked = maskCheckbox.checked;
 
-		writeEntryToSource(app, ctx, containerEl, data, section, key, value, masked);
-		onClose();
+		const ok = writeEntryToSource(app, ctx, containerEl, section, key, value, masked);
+		if (ok) {
+			onClose();
+		} else {
+			new Notice("Cannot add entry in reading mode. Switch to edit or live-preview mode.");
+		}
 	});
 
 	// Focus the value input for quick paste
@@ -171,25 +174,21 @@ function writeEntryToSource(
 	app: App,
 	ctx: MarkdownPostProcessorContext,
 	containerEl: HTMLElement,
-	data: ClipBookData,
 	section: string | null,
 	key: string | null,
 	value: string,
 	masked: boolean
-): void {
+): boolean {
 	const entryLine = buildEntryLine(key, value, masked);
 
-	// Try editor-based write first (works in edit/live-preview mode)
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
 	const sectionInfo = ctx.getSectionInfo(containerEl);
 
 	if (view && sectionInfo) {
 		writeViaEditor(view.editor, sectionInfo, section, entryLine);
-		return;
+		return true;
 	}
-
-	// Fallback: write via vault.process (works in reading mode)
-	writeViaVault(app, ctx, section, entryLine);
+	return false;
 }
 
 function writeViaEditor(
@@ -235,45 +234,6 @@ function writeViaEditor(
 	}
 }
 
-function writeViaVault(
-	app: App,
-	ctx: MarkdownPostProcessorContext,
-	section: string | null,
-	entryLine: string
-): void {
-	const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
-	if (!(file instanceof TFile)) {
-		new Notice("Cannot add entry: file not found.");
-		return;
-	}
-
-	app.vault.process(file, (content) => {
-		const lines = content.split("\n");
-		const block = findClipBookBlock(lines);
-		if (!block) {
-			new Notice("Cannot add entry: clipbook block not found.");
-			return content;
-		}
-
-		const blockLines = lines.slice(block.start + 1, block.end);
-
-		if (section === null) {
-			lines.splice(block.start + 1, 0, entryLine);
-			return lines.join("\n");
-		}
-
-		const { sectionFound, insertOffset } = findInsertionOffset(blockLines, section);
-
-		if (sectionFound) {
-			lines.splice(block.start + 1 + insertOffset, 0, entryLine);
-		} else {
-			lines.splice(block.end, 0, "", `[${section}]`, entryLine);
-		}
-
-		return lines.join("\n");
-	});
-}
-
 function findInsertionOffset(
 	blockLines: string[],
 	section: string
@@ -303,23 +263,4 @@ function findInsertionOffset(
 		return { sectionFound: true, insertOffset: lastEntryIdx + 1 };
 	}
 	return { sectionFound: false, insertOffset: blockLines.length };
-}
-
-function findClipBookBlock(
-	lines: string[]
-): { start: number; end: number } | null {
-	let start = -1;
-	for (let i = 0; i < lines.length; i++) {
-		const trimmed = lines[i].trim();
-		if (start === -1) {
-			if (trimmed === "```clipbook") {
-				start = i;
-			}
-		} else {
-			if (trimmed === "```") {
-				return { start, end: i };
-			}
-		}
-	}
-	return null;
 }

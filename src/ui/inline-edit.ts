@@ -2,8 +2,6 @@ import {
 	App,
 	MarkdownPostProcessorContext,
 	MarkdownView,
-	Notice,
-	TFile,
 } from "obsidian";
 import { ClipBookEntry } from "../types";
 import { buildEntryLine } from "./quick-add";
@@ -59,7 +57,7 @@ export function startInlineEdit(
 
 /**
  * Replace a specific source line within the clipbook block.
- * Uses editor API in edit/live-preview mode, falls back to vault.process().
+ * Requires edit/live-preview mode; returns false if no editor is available.
  */
 export function replaceEntryInSource(
 	app: App,
@@ -68,7 +66,7 @@ export function replaceEntryInSource(
 	entry: ClipBookEntry,
 	newKey: string | null,
 	newValue: string
-): void {
+): boolean {
 	const newLine = buildEntryLine(newKey, newValue, entry.masked);
 
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
@@ -82,32 +80,7 @@ export function replaceEntryInSource(
 			{ line: targetLine, ch: 0 },
 			{ line: targetLine + 1, ch: 0 }
 		);
-		return;
+		return true;
 	}
-
-	// Fallback: vault.process for reading mode
-	const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
-	if (!(file instanceof TFile)) {
-		new Notice("Cannot edit: file not found.");
-		return;
-	}
-
-	app.vault.process(file, (content) => {
-		const lines = content.split("\n");
-		// Find the clipbook block that contains this entry
-		let blockStart = -1;
-		for (let i = 0; i < lines.length; i++) {
-			if (lines[i].trim() === "```clipbook") {
-				blockStart = i;
-				break;
-			}
-		}
-		if (blockStart === -1) {
-			new Notice("Cannot edit: clipbook block not found.");
-			return content;
-		}
-		const targetLine = blockStart + 1 + entry.sourceLine;
-		lines[targetLine] = newLine;
-		return lines.join("\n");
-	});
+	return false;
 }

@@ -1,6 +1,7 @@
 import {
 	App,
 	MarkdownPostProcessorContext,
+	Notice,
 	setIcon,
 } from "obsidian";
 import { ClipBookData, ClipBookEntry, ClipBookSection } from "../types";
@@ -106,7 +107,8 @@ function renderEntry(
 
 	// Key label (skip for keyless entries)
 	if (entry.key !== null) {
-		const keyEl = rowEl.createSpan({ cls: "clipbook-key", text: entry.key });
+		const key = entry.key;
+		const keyEl = rowEl.createSpan({ cls: "clipbook-key", text: key });
 		let keyEditing = false;
 
 		keyEl.addEventListener("mousedown", (evt) => {
@@ -115,14 +117,17 @@ function renderEntry(
 			keyEditing = true;
 			startInlineEdit(
 				keyEl,
-				entry.key!,
+				key,
 				(newKey) => {
 					keyEditing = false;
-					replaceEntryInSource(app, ctx, containerEl, entry, newKey, entry.value);
+					if (!replaceEntryInSource(app, ctx, containerEl, entry, newKey, entry.value)) {
+						new Notice("Cannot edit in reading mode. Switch to edit or live-preview mode.");
+						keyEl.setText(key);
+					}
 				},
 				() => {
 					keyEditing = false;
-					keyEl.setText(entry.key!);
+					keyEl.setText(key);
 				}
 			);
 		});
@@ -159,7 +164,10 @@ function renderEntry(
 			entry.value,
 			(newValue) => {
 				valueEditing = false;
-				replaceEntryInSource(app, ctx, containerEl, entry, entry.key, newValue);
+				if (!replaceEntryInSource(app, ctx, containerEl, entry, entry.key, newValue)) {
+					new Notice("Cannot edit in reading mode. Switch to edit or live-preview mode.");
+					restoreValueDisplay();
+				}
 			},
 			() => {
 				valueEditing = false;

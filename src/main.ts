@@ -36,11 +36,17 @@ export default class ClipBookPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
+		const saved: unknown = await this.loadData();
+		const overrides: Partial<ClipBookSettings> = {};
+		if (saved != null && typeof saved === "object" && !Array.isArray(saved)) {
+			const obj = saved as Record<string, unknown>;
+			if (typeof obj.defaultMasked === "boolean") overrides.defaultMasked = obj.defaultMasked;
+			if (typeof obj.autoHideTimeout === "number" && obj.autoHideTimeout >= 0) overrides.autoHideTimeout = obj.autoHideTimeout;
+			if (typeof obj.hideOnTabSwitch === "boolean") overrides.hideOnTabSwitch = obj.hideOnTabSwitch;
+			if (typeof obj.defaultCollapsed === "boolean") overrides.defaultCollapsed = obj.defaultCollapsed;
+			if (typeof obj.quickAddDefaultMask === "boolean") overrides.quickAddDefaultMask = obj.quickAddDefaultMask;
+		}
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, overrides);
 	}
 
 	async saveSettings() {
