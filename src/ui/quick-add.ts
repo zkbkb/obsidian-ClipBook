@@ -3,9 +3,7 @@ import {
 	Editor,
 	MarkdownPostProcessorContext,
 	MarkdownView,
-	Notice,
 	setIcon,
-	TFile,
 } from "obsidian";
 import { ClipBookData } from "../types";
 import { ClipBookSettings } from "../settings";
@@ -188,8 +186,7 @@ function writeEntryToSource(
 		return;
 	}
 
-	// Fallback: write via vault.process (works in reading mode)
-	writeViaVault(app, ctx, section, entryLine);
+	return;
 }
 
 function writeViaEditor(
@@ -235,47 +232,6 @@ function writeViaEditor(
 	}
 }
 
-function writeViaVault(
-	app: App,
-	ctx: MarkdownPostProcessorContext,
-	section: string | null,
-	entryLine: string
-): void {
-	const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
-	if (!(file instanceof TFile)) {
-		new Notice("Cannot add entry: file not found.");
-		return;
-	}
-
-	app.vault.process(file, (content) => {
-		const lines = content.split("\n");
-		const block = findClipBookBlock(lines);
-		if (!block) {
-			new Notice("Cannot add entry: clipbook block not found.");
-			return content;
-		}
-
-		const blockLines = lines.slice(block.start + 1, block.end);
-
-		if (section === null) {
-			lines.splice(block.start + 1, 0, entryLine);
-			return lines.join("\n");
-		}
-
-		const { sectionFound, insertOffset } = findInsertionOffset(blockLines, section);
-
-		if (sectionFound) {
-			lines.splice(block.start + 1 + insertOffset, 0, entryLine);
-		} else {
-			lines.splice(block.end, 0, "", `[${section}]`, entryLine);
-		}
-
-		return lines.join("\n");
-	}).catch(() => {
-		new Notice("ClipBook: failed to update file.");
-	});
-}
-
 function findInsertionOffset(
 	blockLines: string[],
 	section: string
@@ -305,23 +261,4 @@ function findInsertionOffset(
 		return { sectionFound: true, insertOffset: lastEntryIdx + 1 };
 	}
 	return { sectionFound: false, insertOffset: blockLines.length };
-}
-
-function findClipBookBlock(
-	lines: string[]
-): { start: number; end: number } | null {
-	let start = -1;
-	for (let i = 0; i < lines.length; i++) {
-		const trimmed = lines[i].trim();
-		if (start === -1) {
-			if (trimmed === "```clipbook") {
-				start = i;
-			}
-		} else {
-			if (trimmed === "```") {
-				return { start, end: i };
-			}
-		}
-	}
-	return null;
 }
