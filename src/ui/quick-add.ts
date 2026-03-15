@@ -3,6 +3,7 @@ import {
 	Editor,
 	MarkdownPostProcessorContext,
 	MarkdownView,
+	Notice,
 	setIcon,
 } from "obsidian";
 import { ClipBookData } from "../types";
@@ -139,8 +140,12 @@ function renderQuickAddForm(
 		const key = keyInput.value.trim() || null;
 		const masked = maskCheckbox.checked;
 
-		writeEntryToSource(app, ctx, containerEl, section, key, value, masked);
-		onClose();
+		const ok = writeEntryToSource(app, ctx, containerEl, section, key, value, masked);
+		if (ok) {
+			onClose();
+		} else {
+			new Notice("Cannot add entry in reading mode. Switch to edit or live-preview mode.");
+		}
 	});
 
 	// Focus the value input for quick paste
@@ -173,17 +178,17 @@ function writeEntryToSource(
 	key: string | null,
 	value: string,
 	masked: boolean
-): void {
+): boolean {
 	const entryLine = buildEntryLine(key, value, masked);
 
-	// Try editor-based write first (works in edit/live-preview mode)
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
 	const sectionInfo = ctx.getSectionInfo(containerEl);
 
 	if (view && sectionInfo) {
 		writeViaEditor(view.editor, sectionInfo, section, entryLine);
-		return;
+		return true;
 	}
+	return false;
 }
 
 function writeViaEditor(

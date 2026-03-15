@@ -57,7 +57,7 @@ export function startInlineEdit(
 
 /**
  * Replace a specific source line within the clipbook block.
- * Requires edit/live-preview mode; silently no-ops in reading mode.
+ * Requires edit/live-preview mode; returns false if no editor is available.
  */
 export function replaceEntryInSource(
 	app: App,
@@ -66,7 +66,7 @@ export function replaceEntryInSource(
 	entry: ClipBookEntry,
 	newKey: string | null,
 	newValue: string
-): void {
+): boolean {
 	const newLine = buildEntryLine(newKey, newValue, entry.masked);
 
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
@@ -80,6 +80,7 @@ export function replaceEntryInSource(
 			{ line: targetLine, ch: 0 },
 			{ line: targetLine + 1, ch: 0 }
 		);
-		return;
+		return true;
 	}
+	return false;
 }

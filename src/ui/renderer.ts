@@ -1,6 +1,7 @@
 import {
 	App,
 	MarkdownPostProcessorContext,
+	Notice,
 	setIcon,
 } from "obsidian";
 import { ClipBookData, ClipBookEntry, ClipBookSection } from "../types";
@@ -119,7 +120,10 @@ function renderEntry(
 				key,
 				(newKey) => {
 					keyEditing = false;
-					replaceEntryInSource(app, ctx, containerEl, entry, newKey, entry.value);
+					if (!replaceEntryInSource(app, ctx, containerEl, entry, newKey, entry.value)) {
+						new Notice("Cannot edit in reading mode. Switch to edit or live-preview mode.");
+						keyEl.setText(key);
+					}
 				},
 				() => {
 					keyEditing = false;
@@ -160,7 +164,10 @@ function renderEntry(
 			entry.value,
 			(newValue) => {
 				valueEditing = false;
-				replaceEntryInSource(app, ctx, containerEl, entry, entry.key, newValue);
+				if (!replaceEntryInSource(app, ctx, containerEl, entry, entry.key, newValue)) {
+					new Notice("Cannot edit in reading mode. Switch to edit or live-preview mode.");
+					restoreValueDisplay();
+				}
 			},
 			() => {
 				valueEditing = false;
