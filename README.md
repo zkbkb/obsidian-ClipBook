@@ -47,11 +47,15 @@ Prefix a value with `!` to mask it. Masked values show a truncated form:
 - Medium values (4-10 chars): first 2 + `···`
 - Short values (1-3 chars): `···`
 
-Click a masked value to reveal the full text. Click again to re-mask. Revealed values are automatically re-masked after a configurable timeout or when you switch tabs.
+Click a masked value to reveal the full text. Revealed values are automatically re-masked after a configurable timeout or when you switch tabs.
 
 ## Collapsible sections
 
 Sections with a `[Header]` can be collapsed and expanded by clicking the header. You can set sections to start collapsed by default in settings.
+
+## Inline editing
+
+Click any Key name or Value to edit it in place — the cursor lands right where you clicked. For masked values, click once to reveal, then click again to edit. Press Enter to save or Escape to cancel. Changes are written back to the markdown source automatically.
 
 ## Quick add
 

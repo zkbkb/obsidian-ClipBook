@@ -151,7 +151,7 @@ function renderQuickAddForm(
 	return formEl;
 }
 
-function buildEntryLine(
+export function buildEntryLine(
 	key: string | null,
 	value: string,
 	masked: boolean

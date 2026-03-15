@@ -5,8 +5,8 @@ export function parseClipBook(source: string): ClipBookData {
 	const sections: ClipBookData = [];
 	let currentSection: ClipBookSection = { name: null, entries: [] };
 
-	for (const rawLine of lines) {
-		const line = rawLine.trim();
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i].trim();
 
 		// Skip empty lines and comments
 		if (line === "" || line.startsWith("#") || line.startsWith(";")) {
@@ -43,6 +43,7 @@ export function parseClipBook(source: string): ClipBookData {
 					key: key === "" ? null : key,
 					value,
 					masked,
+					sourceLine: i,
 				});
 			}
 			continue;
@@ -56,7 +57,12 @@ export function parseClipBook(source: string): ClipBookData {
 			bareValue = bareValue.substring(1);
 		}
 		if (bareValue !== "") {
-			currentSection.entries.push({ key: null, value: bareValue, masked: bareMasked });
+			currentSection.entries.push({
+				key: null,
+				value: bareValue,
+				masked: bareMasked,
+				sourceLine: i,
+			});
 		}
 	}
 

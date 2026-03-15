@@ -8,6 +8,7 @@ import { ClipBookSettings } from "../settings";
 import { maskValue } from "../utils/mask";
 import { attachCopyHandler } from "./copy";
 import { renderQuickAddButton } from "./quick-add";
+import { startInlineEdit, replaceEntryInSource } from "./inline-edit";
 
 // Global set of hide callbacks for blur-based auto-hide.
 // Each entry maps a hide function to the DOM element it controls,
@@ -42,7 +43,7 @@ export function renderClipBook(
 	}
 
 	for (const section of data) {
-		renderSection(section, containerEl, settings);
+		renderSection(section, containerEl, settings, ctx, app);
 	}
 
 	// Quick-add button at the bottom
@@ -52,7 +53,9 @@ export function renderClipBook(
 function renderSection(
 	section: ClipBookSection,
 	containerEl: HTMLElement,
-	settings: ClipBookSettings
+	settings: ClipBookSettings,
+	ctx: MarkdownPostProcessorContext,
+	app: App
 ): void {
 	const sectionEl = containerEl.createDiv({ cls: "clipbook-section" });
 
@@ -81,12 +84,12 @@ function renderSection(
 		});
 
 		for (const entry of section.entries) {
-			renderEntry(entry, entriesEl, settings);
+			renderEntry(entry, entriesEl, settings, ctx, app, containerEl);
 		}
 	} else {
 		// Orphan entries — no header, not collapsible
 		for (const entry of section.entries) {
-			renderEntry(entry, sectionEl, settings);
+			renderEntry(entry, sectionEl, settings, ctx, app, containerEl);
 		}
 	}
 }
@@ -94,13 +97,35 @@ function renderSection(
 function renderEntry(
 	entry: ClipBookEntry,
 	parentEl: HTMLElement,
-	settings: ClipBookSettings
+	settings: ClipBookSettings,
+	ctx: MarkdownPostProcessorContext,
+	app: App,
+	containerEl: HTMLElement
 ): void {
 	const rowEl = parentEl.createDiv({ cls: "clipbook-row" });
 
 	// Key label (skip for keyless entries)
 	if (entry.key !== null) {
-		rowEl.createSpan({ cls: "clipbook-key", text: entry.key });
+		const keyEl = rowEl.createSpan({ cls: "clipbook-key", text: entry.key });
+		let keyEditing = false;
+
+		keyEl.addEventListener("mousedown", (evt) => {
+			if (keyEditing) return;
+			evt.stopPropagation();
+			keyEditing = true;
+			startInlineEdit(
+				keyEl,
+				entry.key!,
+				(newKey) => {
+					keyEditing = false;
+					replaceEntryInSource(app, ctx, containerEl, entry, newKey, entry.value);
+				},
+				() => {
+					keyEditing = false;
+					keyEl.setText(entry.key!);
+				}
+			);
+		});
 	}
 
 	// Value display
@@ -109,8 +134,39 @@ function renderEntry(
 	});
 	let revealed = false;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
+	let valueEditing = false;
 
 	const isMasked = entry.masked || settings.defaultMasked;
+
+	// Restore value element to its non-editing display state
+	const restoreValueDisplay = () => {
+		if (isMasked) {
+			revealed = false;
+			valueEl.setText(maskValue(entry.value));
+			valueEl.toggleClass("clipbook-revealed", false);
+			valueEl.addClass("clipbook-masked");
+			valueEl.setAttribute("aria-label", "Click to reveal value");
+		} else {
+			valueEl.setText(entry.value);
+		}
+	};
+
+	// Enter inline edit mode for the value
+	const enterValueEdit = () => {
+		valueEditing = true;
+		startInlineEdit(
+			valueEl,
+			entry.value,
+			(newValue) => {
+				valueEditing = false;
+				replaceEntryInSource(app, ctx, containerEl, entry, entry.key, newValue);
+			},
+			() => {
+				valueEditing = false;
+				restoreValueDisplay();
+			}
+		);
+	};
 
 	if (isMasked) {
 		valueEl.setText(maskValue(entry.value));
@@ -120,7 +176,7 @@ function renderEntry(
 		valueEl.tabIndex = 0;
 
 		const hideValue = () => {
-			if (!revealed) return;
+			if (!revealed || valueEditing) return;
 			revealed = false;
 			if (hideTimer) {
 				clearTimeout(hideTimer);
@@ -132,45 +188,65 @@ function renderEntry(
 			revealedHideCallbacks.delete(hideValue);
 		};
 
-		const toggleReveal = () => {
-			revealed = !revealed;
-			valueEl.setText(revealed ? entry.value : maskValue(entry.value));
-			valueEl.toggleClass("clipbook-revealed", revealed);
-			valueEl.setAttribute(
-				"aria-label",
-				revealed ? "Click to hide value" : "Click to reveal value"
-			);
+		const revealValue = () => {
+			revealed = true;
+			valueEl.setText(entry.value);
+			valueEl.toggleClass("clipbook-revealed", true);
+			valueEl.setAttribute("aria-label", "Click to edit value");
 
+			// Register for blur-based hiding
+			revealedHideCallbacks.set(hideValue, valueEl);
+
+			// Timer-based auto-hide
+			if (settings.autoHideTimeout > 0) {
+				hideTimer = setTimeout(
+					hideValue,
+					settings.autoHideTimeout * 1000
+				);
+			}
+		};
+
+		// mousedown on revealed value: enter edit before mouseup so cursor lands naturally
+		valueEl.addEventListener("mousedown", () => {
+			if (valueEditing || !revealed) return;
 			if (hideTimer) {
 				clearTimeout(hideTimer);
 				hideTimer = null;
 			}
+			revealedHideCallbacks.delete(hideValue);
+			enterValueEdit();
+		});
 
-			if (revealed) {
-				// Register for blur-based hiding
-				revealedHideCallbacks.set(hideValue, valueEl);
+		// click on masked value: reveal
+		valueEl.addEventListener("click", () => {
+			if (valueEditing || revealed) return;
+			revealValue();
+		});
 
-				// Timer-based auto-hide
-				if (settings.autoHideTimeout > 0) {
-					hideTimer = setTimeout(
-						hideValue,
-						settings.autoHideTimeout * 1000
-					);
-				}
-			} else {
-				revealedHideCallbacks.delete(hideValue);
-			}
-		};
-
-		valueEl.addEventListener("click", toggleReveal);
 		valueEl.addEventListener("keydown", (evt: KeyboardEvent) => {
+			if (valueEditing) return;
 			if (evt.key === "Enter" || evt.key === " ") {
 				evt.preventDefault();
-				toggleReveal();
+				if (!revealed) {
+					revealValue();
+				} else {
+					if (hideTimer) {
+						clearTimeout(hideTimer);
+						hideTimer = null;
+					}
+					revealedHideCallbacks.delete(hideValue);
+					enterValueEdit();
+				}
 			}
 		});
 	} else {
 		valueEl.setText(entry.value);
+
+		// mousedown to edit — cursor lands at click position naturally
+		valueEl.addEventListener("mousedown", () => {
+			if (valueEditing) return;
+			enterValueEdit();
+		});
 	}
 
 	// Copy button
