@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import type ClipBookPlugin from "./main";
 
 export interface ClipBookSettings {
@@ -34,9 +34,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		const num = parseInt(this.delayInputEl.value, 10);
 		if (isNaN(num) || num < 1) {
 			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
-			this.plugin.saveSettings().catch(() => {
-				new Notice("ClipBook: Failed to save settings.");
-			});
+			this.plugin.saveSettings().catch(() => { /* ignored */ });
 		}
 	}
 
