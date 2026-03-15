@@ -45,7 +45,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Mask all values by default")
 			.setDesc(
-				"When enabled, all values are masked — not just !-prefixed ones"
+				"When enabled, all values are masked — not just those with the `!` prefix"
 			)
 			.addToggle((toggle) =>
 				toggle
