@@ -10,7 +10,15 @@ export function attachCopyHandler(
 
 	buttonEl.addEventListener("click", (evt) => {
 		evt.stopPropagation();
-		navigator.clipboard.writeText(getValue()).then(() => {
+		let value: string;
+		try {
+			value = getValue();
+		} catch (error) {
+			console.error("ClipBook: copy failed", error);
+			new Notice("Failed to copy to clipboard");
+			return;
+		}
+		navigator.clipboard.writeText(value).then(() => {
 			// Cancel any pending feedback reset from a previous click
 			if (feedbackTimer) clearTimeout(feedbackTimer);
 			// Success: swap icon to checkmark

@@ -8,6 +8,15 @@ export default [
 	},
 	{
 		files: ["src/**/*.ts"],
+		plugins: {
+			obsidianmd,
+		},
+		rules: {
+			...obsidianmd.configs.recommended,
+		},
+	},
+	{
+		files: ["src/**/*.ts"],
 		languageOptions: {
 			parser: tsparser,
 			parserOptions: {
@@ -20,8 +29,6 @@ export default [
 			obsidianmd,
 		},
 		rules: {
-			// Obsidian recommended rules
-			...obsidianmd.configs.recommended,
 			"obsidianmd/ui/sentence-case": [
 				"error",
 				{
