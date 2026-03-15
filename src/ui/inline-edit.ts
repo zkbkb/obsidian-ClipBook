@@ -92,7 +92,7 @@ export function replaceEntryInSource(
 		return;
 	}
 
-	void app.vault.process(file, (content) => {
+	app.vault.process(file, (content) => {
 		const lines = content.split("\n");
 		// Find the clipbook block that contains this entry
 		let blockStart = -1;
@@ -109,5 +109,7 @@ export function replaceEntryInSource(
 		const targetLine = blockStart + 1 + entry.sourceLine;
 		lines[targetLine] = newLine;
 		return lines.join("\n");
+	}).catch(() => {
+		new Notice("ClipBook: failed to update file.");
 	});
 }

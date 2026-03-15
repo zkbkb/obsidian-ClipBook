@@ -247,7 +247,7 @@ function writeViaVault(
 		return;
 	}
 
-	void app.vault.process(file, (content) => {
+	app.vault.process(file, (content) => {
 		const lines = content.split("\n");
 		const block = findClipBookBlock(lines);
 		if (!block) {
@@ -271,6 +271,8 @@ function writeViaVault(
 		}
 
 		return lines.join("\n");
+	}).catch(() => {
+		new Notice("ClipBook: failed to update file.");
 	});
 }
 
