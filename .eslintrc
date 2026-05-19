@@ -9,9 +9,10 @@
       "eslint:recommended",
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended"
-    ], 
+    ],
     "parserOptions": {
-        "sourceType": "module"
+        "sourceType": "module",
+        "project": "./tsconfig.json"
     },
     "rules": {
       "no-unused-vars": "off",
