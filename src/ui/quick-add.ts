@@ -65,7 +65,7 @@ function renderQuickAddForm(
 		cls: "clipbook-add-form-input",
 		attr: {
 			type: "text",
-			placeholder: "(none — add as orphan)",
+			placeholder: "(None — add as orphan)",
 			list: listId,
 		},
 	});
@@ -87,7 +87,7 @@ function renderQuickAddForm(
 	keyRow.createSpan({ cls: "clipbook-add-form-label", text: "Key" });
 	const keyInput = keyRow.createEl("input", {
 		cls: "clipbook-add-form-input",
-		attr: { type: "text", placeholder: "(optional)" },
+		attr: { type: "text", placeholder: "(Optional)" },
 	});
 
 	// Value field
