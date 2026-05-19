@@ -6,7 +6,8 @@ export function attachCopyHandler(
 	buttonEl: HTMLElement,
 	getValue: () => string
 ): void {
-	let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+	let feedbackTimer: number | null = null;
+	const ownerWindow = buttonEl.ownerDocument.defaultView ?? activeWindow;
 
 	buttonEl.addEventListener("click", (evt) => {
 		evt.stopPropagation();
@@ -14,11 +15,11 @@ export function attachCopyHandler(
 			try {
 				await navigator.clipboard.writeText(getValue());
 				// Cancel any pending feedback reset from a previous click
-				if (feedbackTimer) clearTimeout(feedbackTimer);
+				if (feedbackTimer) ownerWindow.clearTimeout(feedbackTimer);
 				// Success: swap icon to checkmark
 				setIcon(buttonEl, "check");
 				buttonEl.addClass("clipbook-copied");
-				feedbackTimer = setTimeout(() => {
+				feedbackTimer = ownerWindow.setTimeout(() => {
 					setIcon(buttonEl, "copy");
 					buttonEl.removeClass("clipbook-copied");
 					feedbackTimer = null;

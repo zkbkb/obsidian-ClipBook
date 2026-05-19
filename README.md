@@ -75,9 +75,9 @@ Open **Settings > ClipBook** to configure:
 
 ## Commands
 
-| Command                          | Description                            |
-| -------------------------------- | -------------------------------------- |
-| ClipBook: Insert clipbook block  | Inserts a template clipbook code block |
+| Command               | Description                            |
+| --------------------- | -------------------------------------- |
+| Insert template block | Inserts a template clipbook code block |
 
 ## Installation
 

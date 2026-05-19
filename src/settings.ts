@@ -26,6 +26,13 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	private saveSettings(): void {
+		this.plugin.saveSettings().catch((error) => {
+			console.error("ClipBook: Failed to save settings.", error);
+			new Notice("Failed to save settings.");
+		});
+	}
+
 	hide(): void {
 		if (!this.delayInputEl) return;
 		// If auto-hide is disabled, nothing to validate
@@ -34,10 +41,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		const num = parseInt(this.delayInputEl.value, 10);
 		if (isNaN(num) || num < 1) {
 			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
-			this.plugin.saveSettings().catch((error) => {
-				console.error("ClipBook: Failed to save settings.", error);
-				new Notice("Failed to save settings.");
-			});
+			this.saveSettings();
 		}
 	}
 
@@ -53,9 +57,9 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.defaultMasked)
-					.onChange(async (value) => {
+					.onChange((value) => {
 						this.plugin.settings.defaultMasked = value;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 					})
 			);
 
@@ -73,11 +77,11 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(autoHideEnabled)
-					.onChange(async (value) => {
+					.onChange((value) => {
 						this.plugin.settings.autoHideTimeout = value
 							? lastDelay
 							: 0;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 						delaySetting.settingEl.toggle(value);
 					})
 			);
@@ -90,12 +94,12 @@ export class ClipBookSettingTab extends PluginSettingTab {
 				text
 					.setPlaceholder("5")
 					.setValue(String(lastDelay))
-					.onChange(async (raw) => {
+					.onChange((raw) => {
 						const num = parseInt(raw, 10);
 						if (isNaN(num) || num < 1) return;
 						lastDelay = num;
 						this.plugin.settings.autoHideTimeout = num;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 					});
 			});
 
@@ -109,9 +113,9 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.hideOnTabSwitch)
-					.onChange(async (value) => {
+					.onChange((value) => {
 						this.plugin.settings.hideOnTabSwitch = value;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 					})
 			);
 
@@ -121,9 +125,9 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.defaultCollapsed)
-					.onChange(async (value) => {
+					.onChange((value) => {
 						this.plugin.settings.defaultCollapsed = value;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 					})
 			);
 
@@ -135,9 +139,9 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.quickAddDefaultMask)
-					.onChange(async (value) => {
+					.onChange((value) => {
 						this.plugin.settings.quickAddDefaultMask = value;
-						await this.plugin.saveSettings();
+						this.saveSettings();
 					})
 			);
 	}

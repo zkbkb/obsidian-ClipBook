@@ -8,6 +8,12 @@ import {
 } from "./settings";
 import { registerCommands } from "./commands";
 
+function isSettingsRecord(
+	value: unknown
+): value is Partial<Record<keyof ClipBookSettings, unknown>> {
+	return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
 export default class ClipBookPlugin extends Plugin {
 	settings!: ClipBookSettings;
 
@@ -30,23 +36,28 @@ export default class ClipBookPlugin extends Plugin {
 				if (this.settings.hideOnTabSwitch) hideAllRevealed();
 			})
 		);
-		this.registerDomEvent(window, "blur", () => {
+		const hideOnBlur = () => {
 			if (this.settings.hideOnTabSwitch) hideAllRevealed();
-		});
+		};
+		this.registerDomEvent(activeWindow, "blur", hideOnBlur);
+		this.registerEvent(
+			this.app.workspace.on("window-open", (_workspaceWindow, win) => {
+				this.registerDomEvent(win, "blur", hideOnBlur);
+			})
+		);
 	}
 
 	async loadSettings() {
-		const saved: unknown = await this.loadData();
+		const saved = (await this.loadData()) as unknown;
 		const overrides: Partial<ClipBookSettings> = {};
-		if (saved != null && typeof saved === "object" && !Array.isArray(saved)) {
-			const obj = saved as Record<string, unknown>;
-			if (typeof obj.defaultMasked === "boolean") overrides.defaultMasked = obj.defaultMasked;
-			if (typeof obj.autoHideTimeout === "number" && obj.autoHideTimeout >= 0) overrides.autoHideTimeout = obj.autoHideTimeout;
-			if (typeof obj.hideOnTabSwitch === "boolean") overrides.hideOnTabSwitch = obj.hideOnTabSwitch;
-			if (typeof obj.defaultCollapsed === "boolean") overrides.defaultCollapsed = obj.defaultCollapsed;
-			if (typeof obj.quickAddDefaultMask === "boolean") overrides.quickAddDefaultMask = obj.quickAddDefaultMask;
+		if (isSettingsRecord(saved)) {
+			if (typeof saved.defaultMasked === "boolean") overrides.defaultMasked = saved.defaultMasked;
+			if (typeof saved.autoHideTimeout === "number" && saved.autoHideTimeout >= 0) overrides.autoHideTimeout = saved.autoHideTimeout;
+			if (typeof saved.hideOnTabSwitch === "boolean") overrides.hideOnTabSwitch = saved.hideOnTabSwitch;
+			if (typeof saved.defaultCollapsed === "boolean") overrides.defaultCollapsed = saved.defaultCollapsed;
+			if (typeof saved.quickAddDefaultMask === "boolean") overrides.quickAddDefaultMask = saved.quickAddDefaultMask;
 		}
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, overrides);
+		this.settings = { ...DEFAULT_SETTINGS, ...overrides };
 	}
 
 	async saveSettings() {
