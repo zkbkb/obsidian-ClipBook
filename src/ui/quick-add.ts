@@ -46,7 +46,7 @@ export function renderQuickAddButton(
 
 function renderQuickAddForm(
 	containerEl: HTMLElement,
-	data: ClipBookData,
+	_data: ClipBookData,
 	settings: ClipBookSettings,
 	ctx: MarkdownPostProcessorContext,
 	app: App,
@@ -70,7 +70,7 @@ function renderQuickAddForm(
 		},
 	});
 	// Datalist for existing section suggestions
-	const existingSections = data
+	const existingSections = _data
 		.map((s) => s.name)
 		.filter((n): n is string => n !== null);
 	if (existingSections.length > 0) {

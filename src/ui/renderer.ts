@@ -18,7 +18,8 @@ const revealedHideCallbacks = new Map<() => void, HTMLElement>();
 
 export function hideAllRevealed(): void {
 	for (const [hide, el] of revealedHideCallbacks) {
-		if (!document.contains(el)) {
+		const activeDocument = el.ownerDocument;
+		if (!activeDocument.contains(el)) {
 			revealedHideCallbacks.delete(hide);
 			continue;
 		}
@@ -138,7 +139,8 @@ function renderEntry(
 		cls: `clipbook-value${entry.key === null ? " clipbook-value-full" : ""}`,
 	});
 	let revealed = false;
-	let hideTimer: ReturnType<typeof setTimeout> | null = null;
+	const activeWindow = rowEl.ownerDocument.defaultView ?? window;
+	let hideTimer: number | null = null;
 	let valueEditing = false;
 
 	const isMasked = entry.masked || settings.defaultMasked;
@@ -187,7 +189,7 @@ function renderEntry(
 			if (!revealed || valueEditing) return;
 			revealed = false;
 			if (hideTimer) {
-				clearTimeout(hideTimer);
+				activeWindow.clearTimeout(hideTimer);
 				hideTimer = null;
 			}
 			valueEl.setText(maskValue(entry.value));
@@ -207,7 +209,7 @@ function renderEntry(
 
 			// Timer-based auto-hide
 			if (settings.autoHideTimeout > 0) {
-				hideTimer = setTimeout(
+				hideTimer = activeWindow.setTimeout(
 					hideValue,
 					settings.autoHideTimeout * 1000
 				);
@@ -218,7 +220,7 @@ function renderEntry(
 		valueEl.addEventListener("mousedown", () => {
 			if (valueEditing || !revealed) return;
 			if (hideTimer) {
-				clearTimeout(hideTimer);
+				activeWindow.clearTimeout(hideTimer);
 				hideTimer = null;
 			}
 			revealedHideCallbacks.delete(hideValue);
@@ -239,7 +241,7 @@ function renderEntry(
 					revealValue();
 				} else {
 					if (hideTimer) {
-						clearTimeout(hideTimer);
+						activeWindow.clearTimeout(hideTimer);
 						hideTimer = null;
 					}
 					revealedHideCallbacks.delete(hideValue);
