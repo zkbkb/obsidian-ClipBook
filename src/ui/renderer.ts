@@ -18,7 +18,7 @@ const revealedHideCallbacks = new Map<() => void, HTMLElement>();
 
 export function hideAllRevealed(): void {
 	for (const [hide, el] of revealedHideCallbacks) {
-		if (!activeDocument.contains(el)) {
+		if (!el.isConnected) {
 			revealedHideCallbacks.delete(hide);
 			continue;
 		}
