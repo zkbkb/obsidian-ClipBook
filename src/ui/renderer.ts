@@ -20,7 +20,6 @@ export function hideAllRevealed(): void {
 	for (const [hide, el] of revealedHideCallbacks) {
 		if (!el.isConnected) {
 			revealedHideCallbacks.delete(hide);
-			continue;
 		}
 		hide();
 	}
