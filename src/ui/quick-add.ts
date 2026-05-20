@@ -46,7 +46,7 @@ export function renderQuickAddButton(
 
 function renderQuickAddForm(
 	containerEl: HTMLElement,
-	_data: ClipBookData,
+	data: ClipBookData,
 	settings: ClipBookSettings,
 	ctx: MarkdownPostProcessorContext,
 	app: App,
