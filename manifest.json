@@ -2,7 +2,7 @@
 	"id": "clipbook",
 	"name": "ClipBook",
 	"version": "0.1.0",
-	"minAppVersion": "1.0.0",
+	"minAppVersion": "1.1.0",
 	"description": "Store and quickly copy API keys, tokens, and text snippets from structured code blocks.",
 	"author": "Kaibin Zhang",
 	"isDesktopOnly": false
