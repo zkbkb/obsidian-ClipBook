@@ -70,7 +70,7 @@ function renderQuickAddForm(
 		},
 	});
 	// Datalist for existing section suggestions
-	const existingSections = _data
+	const existingSections = data
 		.map((s) => s.name)
 		.filter((n): n is string => n !== null);
 	if (existingSections.length > 0) {
