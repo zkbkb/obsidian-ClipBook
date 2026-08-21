@@ -3,6 +3,7 @@ export interface ClipBookEntry {
 	value: string;
 	masked: boolean;
 	sourceLine: number; // 0-based line index within the clipbook block
+	raw: string; // verbatim source line, used to detect stale writes
 }
 
 export interface ClipBookSection {
