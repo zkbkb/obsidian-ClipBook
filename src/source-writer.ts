@@ -127,7 +127,14 @@ async function editBlockBody(
 	// (embeds, sidebars, and reading-only contexts have no editor).
 	const editor = findEditorForPath(app, ctx.sourcePath);
 	if (editor) {
-		const located = locate(editor.getValue().split("\n"), info, transform, expect);
+		// Split on either line ending, to match how the parser produced
+		// `expect.raw`. Editor line numbers count `\n`, so indices still line up.
+		const located = locate(
+			editor.getValue().split(/\r?\n/),
+			info,
+			transform,
+			expect
+		);
 		if (typeof located === "string") return located;
 		editor.replaceRange(
 			joinBody(located.newBody, "\n"),
