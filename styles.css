@@ -15,17 +15,24 @@
 	margin-bottom: 4px;
 }
 
-/* Section header (collapsible) */
+/* Section header (collapsible) — a real <button>, reset to look like a label */
 .clipbook-section-header {
 	display: flex;
 	align-items: center;
+	width: 100%;
+	box-shadow: none;
+	background: none;
+	border: none;
+	border-bottom: 1px solid var(--background-modifier-border);
+	border-radius: 0;
+	text-align: left;
+	font-family: inherit;
 	font-size: var(--font-smaller);
 	font-weight: 600;
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	padding: 6px 12px 2px;
-	border-bottom: 1px solid var(--background-modifier-border);
 	margin-bottom: 2px;
 	cursor: pointer;
 	-webkit-user-select: none;
@@ -34,6 +41,7 @@
 
 .clipbook-section-header:hover {
 	color: var(--text-normal);
+	background: none;
 }
 
 .clipbook-chevron {
@@ -75,17 +83,20 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	cursor: text;
 }
 
 /* Value */
 .clipbook-value {
 	flex: 1 1 auto;
+	min-width: 0;
 	font-family: var(--font-monospace);
 	font-size: var(--font-smaller);
 	color: var(--text-muted);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	cursor: text;
 	-webkit-user-select: none;
 	user-select: none;
 }
@@ -93,6 +104,13 @@
 /* Keyless entry value — takes full width */
 .clipbook-value-full {
 	flex: 1 1 100%;
+}
+
+/* Stand-in so a cleared value stays clickable */
+.clipbook-value:empty::after {
+	content: "(empty)";
+	font-style: italic;
+	opacity: 0.6;
 }
 
 .clipbook-masked {
@@ -109,31 +127,60 @@
 	user-select: text;
 }
 
-/* Copy button */
-.clipbook-copy-btn {
+/* Icon buttons (copy, delete) */
+.clipbook-icon-btn {
 	flex: 0 0 auto;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 28px;
 	height: 28px;
+	padding: 0;
+	background: none;
+	border: none;
+	box-shadow: none;
 	border-radius: var(--radius-s);
 	cursor: pointer;
 	color: var(--text-muted);
 }
 
-.clipbook-copy-btn:hover {
+.clipbook-icon-btn:hover {
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 }
 
-.clipbook-copy-btn svg {
+.clipbook-icon-btn svg {
 	width: 14px;
 	height: 14px;
 }
 
-.clipbook-copied {
+.clipbook-copied,
+.clipbook-copied:hover {
 	color: var(--text-success, var(--interactive-success));
+}
+
+/* Delete stays out of the way until the row is hovered or focused, so it is
+   never an accidental neighbour of the copy button. */
+.clipbook-delete-btn {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.clipbook-row:hover .clipbook-delete-btn,
+.clipbook-row:focus-within .clipbook-delete-btn {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.clipbook-delete-btn:hover {
+	color: var(--text-error);
+}
+
+@media (hover: none) {
+	.clipbook-delete-btn {
+		opacity: 1;
+		pointer-events: auto;
+	}
 }
 
 /* Quick-add button */
@@ -143,10 +190,14 @@
 	gap: 4px;
 	padding: 4px 12px;
 	margin-top: 4px;
+	background: none;
+	border: none;
+	box-shadow: none;
+	border-radius: var(--radius-s);
+	font-family: inherit;
 	font-size: var(--font-smaller);
 	color: var(--text-muted);
 	cursor: pointer;
-	border-radius: var(--radius-s);
 	-webkit-user-select: none;
 	user-select: none;
 }
@@ -190,6 +241,7 @@
 
 .clipbook-add-form-input {
 	flex: 1 1 auto;
+	min-width: 0;
 	font-family: var(--font-monospace);
 	font-size: var(--font-smaller);
 	padding: 4px 8px;
@@ -251,13 +303,54 @@
 	cursor: not-allowed;
 }
 
-/* Inline editing (contenteditable) */
+/* Inline editing — the element hosts a plain text input while being edited */
 .clipbook-editing {
+	display: flex;
+	overflow: visible;
 	background-color: var(--background-modifier-hover);
 	border-radius: var(--radius-s);
-	outline: none;
-	color: var(--text-normal);
 	cursor: text;
-	-webkit-user-select: text;
-	user-select: text;
+}
+
+.clipbook-edit-input {
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
+	height: auto;
+	padding: 0 2px;
+	margin: 0;
+	background: none;
+	border: none;
+	box-shadow: none;
+	border-radius: 0;
+	outline: none;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	color: var(--text-normal);
+}
+
+/* Values marked as secrets must not survive into a print-out or PDF export. */
+@media print {
+	.clipbook-masked,
+	.clipbook-revealed {
+		visibility: hidden;
+		position: relative;
+	}
+
+	.clipbook-masked::after,
+	.clipbook-revealed::after {
+		content: "···";
+		visibility: visible;
+		position: absolute;
+		top: 0;
+		left: 0;
+		color: var(--text-muted);
+	}
+
+	.clipbook-icon-btn,
+	.clipbook-add-btn {
+		display: none;
+	}
 }

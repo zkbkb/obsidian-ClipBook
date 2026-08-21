@@ -1,101 +1,71 @@
-import {
-	App,
-	Editor,
-	MarkdownPostProcessorContext,
-	MarkdownView,
-	Notice,
-	setIcon,
-} from "obsidian";
+import { Notice, setIcon } from "obsidian";
 import { ClipBookData } from "../types";
-import { ClipBookSettings } from "../settings";
+import {
+	describeKeyProblem,
+	describeSectionProblem,
+	validateKey,
+	validateSectionName,
+} from "../serializer";
+import { describeWriteFailure, insertEntry } from "../source-writer";
+import { RenderContext } from "./context";
+
+let nextElementId = 0;
 
 export function renderQuickAddButton(
-	containerEl: HTMLElement,
-	data: ClipBookData,
-	settings: ClipBookSettings,
-	ctx: MarkdownPostProcessorContext,
-	app: App
+	rc: RenderContext,
+	data: ClipBookData
 ): void {
-	const addBtn = containerEl.createDiv({ cls: "clipbook-add-btn" });
+	const addBtn = rc.containerEl.createEl("button", {
+		cls: "clipbook-add-btn",
+		attr: { type: "button", "aria-expanded": "false" },
+	});
 	const iconEl = addBtn.createSpan({ cls: "clipbook-add-btn-icon" });
 	setIcon(iconEl, "plus");
 	addBtn.createSpan({ text: "Add" });
 
 	let formEl: HTMLElement | null = null;
+	const closeForm = () => {
+		formEl?.remove();
+		formEl = null;
+		addBtn.setAttribute("aria-expanded", "false");
+	};
 
 	addBtn.addEventListener("click", () => {
 		if (formEl) {
-			// Toggle form off
-			formEl.remove();
-			formEl = null;
+			closeForm();
 			return;
 		}
-		formEl = renderQuickAddForm(
-			containerEl,
-			data,
-			settings,
-			ctx,
-			app,
-			() => {
-				formEl?.remove();
-				formEl = null;
-			}
-		);
+		formEl = renderQuickAddForm(rc, data, closeForm);
+		addBtn.setAttribute("aria-expanded", "true");
 	});
 }
 
 function renderQuickAddForm(
-	containerEl: HTMLElement,
+	rc: RenderContext,
 	data: ClipBookData,
-	settings: ClipBookSettings,
-	ctx: MarkdownPostProcessorContext,
-	app: App,
 	onClose: () => void
 ): HTMLElement {
-	const formEl = containerEl.createDiv({ cls: "clipbook-add-form" });
+	const formEl = rc.containerEl.createEl("form", { cls: "clipbook-add-form" });
 
-	// Section field — combo of existing sections + free text
-	const sectionRow = formEl.createDiv({ cls: "clipbook-add-form-row" });
-	sectionRow.createSpan({
-		cls: "clipbook-add-form-label",
-		text: "Section",
+	const listId = `clipbook-sections-${nextElementId++}`;
+	const sectionInput = addField(formEl, "Section", {
+		placeholder: "(none — add as orphan)",
+		list: listId,
 	});
-	const listId = "clipbook-sections-" + Date.now();
-	const sectionInput = sectionRow.createEl("input", {
-		cls: "clipbook-add-form-input",
-		attr: {
-			type: "text",
-			placeholder: "(none — add as orphan)",
-			list: listId,
-		},
-	});
-	// Datalist for existing section suggestions
+
 	const existingSections = data
 		.map((s) => s.name)
-		.filter((n): n is string => n !== null);
+		.filter((name): name is string => name !== null);
 	if (existingSections.length > 0) {
-		const datalist = formEl.createEl("datalist", {
-			attr: { id: listId },
-		});
+		const datalist = formEl.createEl("datalist", { attr: { id: listId } });
 		for (const name of existingSections) {
 			datalist.createEl("option", { attr: { value: name } });
 		}
 	}
 
-	// Key field
-	const keyRow = formEl.createDiv({ cls: "clipbook-add-form-row" });
-	keyRow.createSpan({ cls: "clipbook-add-form-label", text: "Key" });
-	const keyInput = keyRow.createEl("input", {
-		cls: "clipbook-add-form-input",
-		attr: { type: "text", placeholder: "(optional)" },
-	});
-
-	// Value field
-	const valueRow = formEl.createDiv({ cls: "clipbook-add-form-row" });
-	valueRow.createSpan({ cls: "clipbook-add-form-label", text: "Value" });
-	const valueInput = valueRow.createEl("input", {
-		cls: "clipbook-add-form-input",
-		attr: { type: "text", placeholder: "Paste or type value" },
+	const keyInput = addField(formEl, "Key", { placeholder: "(optional)" });
+	const valueInput = addField(formEl, "Value", {
+		placeholder: "Paste or type value",
 	});
 
 	// Mask toggle
@@ -106,161 +76,86 @@ function renderQuickAddForm(
 	const maskCheckbox = maskLabel.createEl("input", {
 		attr: { type: "checkbox" },
 	});
-	if (settings.quickAddDefaultMask) {
-		maskCheckbox.checked = true;
-	}
+	maskCheckbox.checked = rc.settings.quickAddDefaultMask;
 	maskLabel.createSpan({ text: " Mask this value" });
 
-	// Action buttons
 	const actionsRow = formEl.createDiv({ cls: "clipbook-add-form-actions" });
-
 	const cancelBtn = actionsRow.createEl("button", {
 		cls: "clipbook-add-form-cancel",
 		text: "Cancel",
+		attr: { type: "button" },
 	});
 	cancelBtn.addEventListener("click", onClose);
 
-	const addBtn = actionsRow.createEl("button", {
+	const submitBtn = actionsRow.createEl("button", {
 		cls: "clipbook-add-form-submit",
 		text: "Add",
+		attr: { type: "submit" },
 	});
 
-	// Disable Add when value is empty
 	const updateSubmitState = () => {
-		addBtn.disabled = valueInput.value.trim() === "";
+		submitBtn.disabled = valueInput.value.trim() === "";
 	};
 	valueInput.addEventListener("input", updateSubmitState);
 	updateSubmitState();
 
-	addBtn.addEventListener("click", () => {
+	// A <form> gives us Enter-to-submit from any field for free.
+	formEl.addEventListener("submit", (evt) => {
+		evt.preventDefault();
+		void submit();
+	});
+
+	const submit = async (): Promise<void> => {
 		const value = valueInput.value.trim();
 		if (!value) return;
 
-		const section = sectionInput.value.trim() || null;
-		const key = keyInput.value.trim() || null;
-		const masked = maskCheckbox.checked;
-
-		const ok = writeEntryToSource(app, ctx, containerEl, section, key, value, masked);
-		if (ok) {
-			onClose();
-		} else {
-			new Notice("Cannot add entry in reading mode. Switch to edit or live-preview mode.");
+		const key = keyInput.value.trim();
+		const keyProblem = key === "" ? null : validateKey(key);
+		if (keyProblem) {
+			new Notice(describeKeyProblem(keyProblem));
+			keyInput.focus();
+			return;
 		}
-	});
 
-	// Focus the value input for quick paste
+		const section = sectionInput.value.trim();
+		if (section !== "" && validateSectionName(section)) {
+			new Notice(describeSectionProblem());
+			sectionInput.focus();
+			return;
+		}
+
+		const failure = await insertEntry(
+			rc,
+			section || null,
+			key || null,
+			value,
+			maskCheckbox.checked
+		);
+		if (failure) {
+			new Notice(describeWriteFailure(failure));
+			return;
+		}
+		onClose();
+	};
+
 	valueInput.focus();
-
 	return formEl;
 }
 
-export function buildEntryLine(
-	key: string | null,
-	value: string,
-	masked: boolean
-): string {
-	const maskedPrefix = masked ? "!" : "";
-	if (key) {
-		return `${key} = ${maskedPrefix}${value}`;
-	}
-	// Keyless: use bare line for masked, = value for plain (avoid ambiguity)
-	if (masked) {
-		return `!${value}`;
-	}
-	return `= ${value}`;
-}
-
-function writeEntryToSource(
-	app: App,
-	ctx: MarkdownPostProcessorContext,
-	containerEl: HTMLElement,
-	section: string | null,
-	key: string | null,
-	value: string,
-	masked: boolean
-): boolean {
-	const entryLine = buildEntryLine(key, value, masked);
-
-	const view = app.workspace.getActiveViewOfType(MarkdownView);
-	const sectionInfo = ctx.getSectionInfo(containerEl);
-
-	if (view && sectionInfo) {
-		writeViaEditor(view.editor, sectionInfo, section, entryLine);
-		return true;
-	}
-	return false;
-}
-
-function writeViaEditor(
-	editor: Editor,
-	sectionInfo: { lineStart: number; lineEnd: number },
-	section: string | null,
-	entryLine: string
-): void {
-	const blockStart = sectionInfo.lineStart;
-	const blockEnd = sectionInfo.lineEnd;
-
-	if (section === null) {
-		const insertLine = blockStart + 1;
-		editor.replaceRange(
-			entryLine + "\n",
-			{ line: insertLine, ch: 0 },
-			{ line: insertLine, ch: 0 }
-		);
-		return;
-	}
-
-	const sourceLines: string[] = [];
-	for (let i = blockStart + 1; i < blockEnd; i++) {
-		sourceLines.push(editor.getLine(i));
-	}
-
-	const { sectionFound, insertOffset } = findInsertionOffset(sourceLines, section);
-
-	if (sectionFound) {
-		const insertLine = blockStart + 1 + insertOffset;
-		editor.replaceRange(
-			entryLine + "\n",
-			{ line: insertLine, ch: 0 },
-			{ line: insertLine, ch: 0 }
-		);
-	} else {
-		const insertLine = blockEnd;
-		editor.replaceRange(
-			`\n[${section}]\n${entryLine}\n`,
-			{ line: insertLine, ch: 0 },
-			{ line: insertLine, ch: 0 }
-		);
-	}
-}
-
-function findInsertionOffset(
-	blockLines: string[],
-	section: string
-): { sectionFound: boolean; insertOffset: number } {
-	const sectionRegex = /^\[(.+)\]$/;
-	let sectionHeaderIdx = -1;
-	let lastEntryIdx = -1;
-
-	for (let i = 0; i < blockLines.length; i++) {
-		const trimmed = blockLines[i].trim();
-		const match = trimmed.match(sectionRegex);
-		if (match && match[1].trim() === section) {
-			sectionHeaderIdx = i;
-			lastEntryIdx = i;
-			for (let j = i + 1; j < blockLines.length; j++) {
-				const t = blockLines[j].trim();
-				if (t.match(sectionRegex)) break;
-				if (t !== "" && !t.startsWith("#") && !t.startsWith(";")) {
-					lastEntryIdx = j;
-				}
-			}
-			break;
-		}
-	}
-
-	if (sectionHeaderIdx !== -1) {
-		return { sectionFound: true, insertOffset: lastEntryIdx + 1 };
-	}
-	return { sectionFound: false, insertOffset: blockLines.length };
+function addField(
+	formEl: HTMLElement,
+	label: string,
+	attrs: Record<string, string>
+): HTMLInputElement {
+	const rowEl = formEl.createDiv({ cls: "clipbook-add-form-row" });
+	const labelEl = rowEl.createEl("label", {
+		cls: "clipbook-add-form-label",
+		text: label,
+	});
+	const input = rowEl.createEl("input", {
+		cls: "clipbook-add-form-input",
+		attr: { type: "text", ...attrs },
+	});
+	labelEl.htmlFor = input.id || (input.id = `clipbook-field-${nextElementId++}`);
+	return input;
 }

@@ -1,55 +1,66 @@
 import { Plugin } from "obsidian";
 import { parseClipBook } from "./parser";
-import { renderClipBook, hideAllRevealed } from "./ui/renderer";
+import { renderClipBook } from "./ui/renderer";
+import { RevealRegistry } from "./ui/reveal-registry";
 import {
 	ClipBookSettings,
-	DEFAULT_SETTINGS,
 	ClipBookSettingTab,
+	normalizeSettings,
 } from "./settings";
 import { registerCommands } from "./commands";
 
 export default class ClipBookPlugin extends Plugin {
 	settings!: ClipBookSettings;
+	private readonly reveals = new RevealRegistry();
 
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new ClipBookSettingTab(this.app, this));
 		registerCommands(this);
 
-		this.registerMarkdownCodeBlockProcessor(
-			"clipbook",
-			(source, el, ctx) => {
-				const data = parseClipBook(source);
-				renderClipBook(data, el, this.settings, ctx, this.app);
-			}
-		);
-
-		// Blur-based auto-hide: re-mask all revealed values on tab/window switch
-		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", () => {
-				if (this.settings.hideOnTabSwitch) hideAllRevealed();
-			})
-		);
-		this.registerDomEvent(window, "blur", () => {
-			if (this.settings.hideOnTabSwitch) hideAllRevealed();
+		this.registerMarkdownCodeBlockProcessor("clipbook", (source, el, ctx) => {
+			renderClipBook(parseClipBook(source), {
+				app: this.app,
+				ctx,
+				containerEl: el,
+				settings: this.settings,
+				reveals: this.reveals,
+			});
 		});
+
+		// Blur-based auto-hide: re-mask everything on tab or window switch.
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", () =>
+				this.hideRevealedIfEnabled()
+			)
+		);
+		this.registerBlurHandler(window);
+		// Popout windows are separate `window` objects and do not surface their
+		// blur events on the main one.
+		this.registerEvent(
+			this.app.workspace.on("window-open", (_workspaceWindow, win) =>
+				this.registerBlurHandler(win)
+			)
+		);
+	}
+
+	onunload() {
+		this.reveals.clear();
 	}
 
 	async loadSettings() {
-		const saved: unknown = await this.loadData();
-		const overrides: Partial<ClipBookSettings> = {};
-		if (saved != null && typeof saved === "object" && !Array.isArray(saved)) {
-			const obj = saved as Record<string, unknown>;
-			if (typeof obj.defaultMasked === "boolean") overrides.defaultMasked = obj.defaultMasked;
-			if (typeof obj.autoHideTimeout === "number" && obj.autoHideTimeout >= 0) overrides.autoHideTimeout = obj.autoHideTimeout;
-			if (typeof obj.hideOnTabSwitch === "boolean") overrides.hideOnTabSwitch = obj.hideOnTabSwitch;
-			if (typeof obj.defaultCollapsed === "boolean") overrides.defaultCollapsed = obj.defaultCollapsed;
-			if (typeof obj.quickAddDefaultMask === "boolean") overrides.quickAddDefaultMask = obj.quickAddDefaultMask;
-		}
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, overrides);
+		this.settings = normalizeSettings(await this.loadData());
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	private registerBlurHandler(win: Window): void {
+		this.registerDomEvent(win, "blur", () => this.hideRevealedIfEnabled());
+	}
+
+	private hideRevealedIfEnabled(): void {
+		if (this.settings.hideOnTabSwitch) this.reveals.hideAll();
 	}
 }
