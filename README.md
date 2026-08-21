@@ -34,10 +34,28 @@ In reading view, ClipBook renders this as a compact, structured list with copy b
 | `= Value`                    | A keyless plain entry (no key label).                                                                |
 | `[Section Name]`             | A section header to group entries visually. Click to collapse/expand.                                |
 | `# comment` or `; comment`   | A comment line, ignored by the parser.                                                               |
+| `Key = \!Value`              | A plain entry whose value literally starts with `!` (see [Escaping](#escaping)).                     |
 
 - Entries before the first `[Section]` render without a group header.
 - Values containing `=` are handled correctly (only the first `=` is used as the separator).
 - Empty lines are ignored.
+- Keys cannot contain `=`, or start with `#` or `;`. Section names cannot contain `]`.
+- Leading and trailing whitespace is stripped from keys and values.
+
+### Escaping
+
+Only the *first* character of a value can collide with the syntax, so only it is
+ever escaped. A leading backslash is dropped when the next character is `!` or `\`:
+
+| Source           | Value        |
+| ---------------- | ------------ |
+| `Key = \!secret` | `!secret`    |
+| `Key = \\!x`     | `\!x`        |
+| `Key = C:\path`  | `C:\path`    |
+
+Backslashes anywhere else in a value are left alone, so paths and slash-heavy
+secrets need no escaping. ClipBook adds the escape for you when it writes an
+entry back — you only need it when hand-writing a value that starts with `!` or `\`.
 
 ## Masking
 
@@ -55,11 +73,17 @@ Sections with a `[Header]` can be collapsed and expanded by clicking the header.
 
 ## Inline editing
 
-Click any Key name or Value to edit it in place — the cursor lands right where you clicked. For masked values, click once to reveal, then click again to edit. Press Enter to save or Escape to cancel. Changes are written back to the markdown source automatically.
+Click any Key name or Value to edit it in place — the cursor lands right where you clicked. For masked values, click once to reveal, then click again to edit. Press Enter to save or Escape to cancel. Changes are written back to the markdown source automatically, in reading view as well as in edit and live-preview modes.
+
+Clearing a Key turns the entry into a keyless one. Clearing a Value leaves the entry in place with an empty value (keyless entries excepted — they would disappear entirely, so their value cannot be cleared).
+
+Every row also has a delete button, which appears when you hover or focus the row.
+
+Editing is not supported for clipbook blocks nested inside callouts or list items: the source lines carry a prefix ClipBook cannot map back safely, so it declines rather than risk mangling the note.
 
 ## Quick add
 
-Click the **+ Add** button at the bottom of any clipbook block to append a new entry. The inline form lets you choose a section, key, value, and mask toggle, then writes directly back to the markdown source.
+Click the **+ Add** button at the bottom of any clipbook block to append a new entry. The inline form lets you choose a section, key, value, and mask toggle, then writes directly back to the markdown source. New entries are appended to the end of their section, and a section that does not exist yet is created.
 
 ## Settings
 
@@ -91,5 +115,7 @@ Then enable ClipBook in **Settings > Community plugins**.
 
 ## Known limitations
 
-- Masking is visual only, not encryption. Values are stored as plain text in your notes and held in memory while rendered.
+- Masking is visual only, not encryption. Values are stored as plain text in your notes and held in memory while rendered. Keep clipbook notes out of anything you sync or publish without meaning to.
 - Multiline values (SSH keys, certificates) are not supported. Each entry must be a single line.
+- Editing is unavailable for blocks nested inside callouts or list items.
+- Masked values are hidden when a note is printed or exported to PDF, but the plaintext still lives in the markdown itself — an exported *markdown* file carries everything.
