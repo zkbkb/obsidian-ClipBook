@@ -5,7 +5,7 @@ All notable changes to ClipBook will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-21
 
 ### Fixed
 
@@ -44,14 +44,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** section names can no longer contain `]`. This is what stops the
+  header pattern from matching greedily; a name like `[A]B]` used to parse as a
+  section and no longer does.
+- **Breaking:** a hand-written value of `\!foo` now reads as `!foo`. That is the
+  new escape rule working as intended, but it changes the meaning of a value
+  written that way before this release.
 - Inline editing uses a text input instead of `contenteditable="plaintext-only"`,
   which is unsupported on older WebKit and made editing silently do nothing on iOS.
 - Section headers, the quick-add button, and the row buttons are real `<button>`
   elements, so collapsing a section and deleting an entry are reachable from the
-  keyboard and announced with the right role and state.
-- Auto-hide on blur now also covers popout windows.
+  keyboard and announced with the right role and state. Keys and values respond
+  to screen-reader activation as well as to pointer and keyboard input.
+- Auto-hide on blur now also covers popout windows, and releases its listener
+  when one closes.
 - Keyless entries are written as `= value` rather than as a bare line, which is
   ambiguous for values containing `=` or starting with `[`.
+
+## [0.1.1] - 2026-05-20
+
+### Fixed
+
+- Issues raised by the Obsidian plugin scanner: sentence case in notice text, no
+  `async` event listeners, no non-null assertions, and no invalid
+  `eslint-disable` comments.
+- Saved settings are validated per key before use, instead of being merged in
+  whole from `loadData()`.
+- A failure to save settings is logged and surfaced as a notice rather than
+  being swallowed.
+- The copy handler catches synchronous exceptions, and schedules its feedback
+  timer on the owning window so it also works in popout windows.
+- Editing or adding an entry in reading view shows a notice explaining why it
+  did not apply, instead of silently doing nothing.
+- Release artifacts are attested correctly by the release workflow.
+
+### Changed
+
+- `minAppVersion` raised to 1.1.0.
+- The command is named "Insert template block" — Obsidian already prefixes the
+  plugin name, so "Insert clipbook block" read as "ClipBook: Insert clipbook
+  block".
 
 ## [0.1.0] - 2026-02-06
 
@@ -73,4 +105,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comment support with `#` and `;` prefixes
 - Orphan entries (key-value pairs before first `[Section]`) render without group header
 
+[0.2.0]: https://github.com/zkbkb/obsidian-ClipBook/compare/0.1.1...0.2.0
+[0.1.1]: https://github.com/zkbkb/obsidian-ClipBook/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/zkbkb/obsidian-ClipBook/releases/tag/0.1.0
