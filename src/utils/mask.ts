@@ -6,8 +6,12 @@
  *   "sk-proj-abc123def456" → "sk-···f456"
  *   "us-east-1" (9 chars)  → "us···"     (≤10 chars: first 2 + mask)
  *   "ab" (2 chars)          → "···"       (≤3 chars: fully hidden)
+ *   ""                      → ""          (nothing to hide)
  */
 export function maskValue(value: string, mask = "···"): string {
+	if (value.length === 0) {
+		return "";
+	}
 	if (value.length <= 3) {
 		return mask;
 	}

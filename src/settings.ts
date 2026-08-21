@@ -1,13 +1,15 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ClipBookPlugin from "./main";
 
-export interface ClipBookSettings {
+// A type alias rather than an interface so `normalizeSettings` can write to it
+// through a string index signature without casting.
+export type ClipBookSettings = {
 	defaultMasked: boolean;       // mask all values, not just !-prefixed
 	autoHideTimeout: number;      // seconds, 0 = never
 	hideOnTabSwitch: boolean;     // re-mask on blur/tab switch
 	defaultCollapsed: boolean;    // sections start collapsed
 	quickAddDefaultMask: boolean; // mask checkbox default in quick-add
-}
+};
 
 export const DEFAULT_SETTINGS: ClipBookSettings = {
 	defaultMasked: false,
@@ -16,6 +18,30 @@ export const DEFAULT_SETTINGS: ClipBookSettings = {
 	defaultCollapsed: false,
 	quickAddDefaultMask: true,
 };
+
+/**
+ * Coerce whatever `loadData()` returns into valid settings, discarding anything
+ * of the wrong shape. Driven by `DEFAULT_SETTINGS` so that adding a setting
+ * means touching the interface and the defaults, and nothing else.
+ */
+export function normalizeSettings(saved: unknown): ClipBookSettings {
+	const settings: ClipBookSettings = { ...DEFAULT_SETTINGS };
+	if (saved === null || typeof saved !== "object" || Array.isArray(saved)) {
+		return settings;
+	}
+
+	const stored = saved as Record<string, unknown>;
+	const target: Record<string, unknown> = settings;
+	for (const key of Object.keys(DEFAULT_SETTINGS)) {
+		const value = stored[key];
+		if (typeof value !== typeof target[key]) continue;
+		if (typeof value === "number" && !(Number.isFinite(value) && value >= 0)) {
+			continue;
+		}
+		target[key] = value;
+	}
+	return settings;
+}
 
 export class ClipBookSettingTab extends PluginSettingTab {
 	plugin: ClipBookPlugin;
