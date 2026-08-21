@@ -105,7 +105,10 @@ function renderQuickAddForm(
 		void submit();
 	});
 
+	let submitting = false;
 	const submit = async (): Promise<void> => {
+		if (submitting) return;
+
 		const value = valueInput.value.trim();
 		if (!value) return;
 
@@ -124,18 +127,28 @@ function renderQuickAddForm(
 			return;
 		}
 
-		const failure = await insertEntry(
-			rc,
-			section || null,
-			key || null,
-			value,
-			maskCheckbox.checked
-		);
-		if (failure) {
-			new Notice(describeWriteFailure(failure));
-			return;
+		// The `Vault.process` path is genuinely async, and an insert carries no
+		// expectation the writer could reject a repeat against — two fast
+		// submissions would each append the entry to the latest contents.
+		submitting = true;
+		submitBtn.disabled = true;
+		try {
+			const failure = await insertEntry(
+				rc,
+				section || null,
+				key || null,
+				value,
+				maskCheckbox.checked
+			);
+			if (failure) {
+				new Notice(describeWriteFailure(failure));
+				return;
+			}
+			onClose();
+		} finally {
+			submitting = false;
+			updateSubmitState();
 		}
-		onClose();
 	};
 
 	valueInput.focus();
