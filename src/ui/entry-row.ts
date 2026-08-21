@@ -146,9 +146,15 @@ function renderValue(
 			evt.preventDefault();
 			edit(caretIndexFromPoint(valueEl, evt));
 		});
-		valueEl.addEventListener("click", () => {
-			if (editing || mv.isRevealed) return;
-			mv.reveal();
+		valueEl.addEventListener("click", (evt) => {
+			if (editing) return;
+			if (!mv.isRevealed) {
+				mv.reveal();
+				return;
+			}
+			// Already revealed, and no mousedown started an edit — so this is a
+			// synthesized activation (see `onActivate`).
+			if (evt.detail === 0) edit();
 		});
 		valueEl.addEventListener("keydown", (evt: KeyboardEvent) => {
 			if (editing || (evt.key !== "Enter" && evt.key !== " ")) return;
@@ -179,9 +185,20 @@ function renderDeleteButton(
 	});
 	setIcon(deleteBtn, "trash-2");
 
-	deleteBtn.addEventListener("click", (evt) => {
+	// A second click before the first write lands would be rejected by the
+	// writer's line check and report a spurious "the note changed" instead.
+	let deleting = false;
+	deleteBtn.addEventListener("click", async (evt) => {
 		evt.stopPropagation();
-		void write(deleteEntry(rc, entry));
+		if (deleting) return;
+		deleting = true;
+		deleteBtn.disabled = true;
+		try {
+			await write(deleteEntry(rc, entry));
+		} finally {
+			deleting = false;
+			deleteBtn.disabled = false;
+		}
 	});
 }
 
@@ -200,6 +217,14 @@ function onActivate(
 	el.addEventListener("keydown", (evt: KeyboardEvent) => {
 		if (isEditing() || (evt.key !== "Enter" && evt.key !== " ")) return;
 		evt.preventDefault();
+		edit();
+	});
+	// Assistive technology activates a role="button" by synthesizing a click,
+	// without a mousedown or a DOM keydown, so neither handler above sees it.
+	// Synthesized clicks carry `detail === 0`, which also keeps a real pointer
+	// click from starting a second edit on top of its own mousedown.
+	el.addEventListener("click", (evt) => {
+		if (isEditing() || evt.detail !== 0) return;
 		edit();
 	});
 }

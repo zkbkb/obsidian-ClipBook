@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { Component, Plugin } from "obsidian";
 import { parseClipBook } from "./parser";
 import { renderClipBook } from "./ui/renderer";
 import { RevealRegistry } from "./ui/reveal-registry";
@@ -12,6 +12,7 @@ import { registerCommands } from "./commands";
 export default class ClipBookPlugin extends Plugin {
 	settings!: ClipBookSettings;
 	private readonly reveals = new RevealRegistry();
+	private readonly blurHandlers = new Map<Window, Component>();
 
 	async onload() {
 		await this.loadSettings();
@@ -42,10 +43,16 @@ export default class ClipBookPlugin extends Plugin {
 				this.registerBlurHandler(win)
 			)
 		);
+		this.registerEvent(
+			this.app.workspace.on("window-close", (_workspaceWindow, win) =>
+				this.releaseBlurHandler(win)
+			)
+		);
 	}
 
 	onunload() {
 		this.reveals.clear();
+		this.blurHandlers.clear();
 	}
 
 	async loadSettings() {
@@ -56,8 +63,23 @@ export default class ClipBookPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	/**
+	 * One child component per window, rather than registering on the plugin
+	 * itself: closing a popout releases its listener there and then, instead of
+	 * retaining the dead window and its document until the plugin unloads.
+	 */
 	private registerBlurHandler(win: Window): void {
-		this.registerDomEvent(win, "blur", () => this.hideRevealedIfEnabled());
+		if (this.blurHandlers.has(win)) return;
+		const handler = this.addChild(new Component());
+		handler.registerDomEvent(win, "blur", () => this.hideRevealedIfEnabled());
+		this.blurHandlers.set(win, handler);
+	}
+
+	private releaseBlurHandler(win: Window): void {
+		const handler = this.blurHandlers.get(win);
+		if (!handler) return;
+		this.blurHandlers.delete(win);
+		this.removeChild(handler);
 	}
 
 	private hideRevealedIfEnabled(): void {
