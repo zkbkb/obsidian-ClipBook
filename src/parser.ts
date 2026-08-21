@@ -48,7 +48,10 @@ function readValue(raw: string): { value: string; masked: boolean } {
 }
 
 export function parseClipBook(source: string): ClipBookData {
-	const lines = source.split("\n");
+	// Split on either line ending: a trailing `\r` would end up in `entry.raw`
+	// and never match the lines the source writer compares against, rejecting
+	// every edit on a CRLF note as stale.
+	const lines = source.split(/\r?\n/);
 	const sections: ClipBookData = [];
 	let currentSection: ClipBookSection = { name: null, entries: [] };
 
