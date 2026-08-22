@@ -2,6 +2,8 @@ import { Component, Plugin } from "obsidian";
 import { parseClipBook } from "./parser";
 import { renderClipBook } from "./ui/renderer";
 import { RevealRegistry } from "./ui/reveal-registry";
+import { CollapseRegistry } from "./ui/collapse-state";
+import { ClipboardGuard } from "./clipboard";
 import {
 	ClipBookSettings,
 	ClipBookSettingTab,
@@ -12,12 +14,19 @@ import { registerCommands } from "./commands";
 export default class ClipBookPlugin extends Plugin {
 	settings!: ClipBookSettings;
 	private readonly reveals = new RevealRegistry();
+	private readonly collapse = new CollapseRegistry();
+	private readonly clipboard = new ClipboardGuard(window);
 	private readonly blurHandlers = new Map<Window, Component>();
 
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new ClipBookSettingTab(this.app, this));
-		registerCommands(this);
+		registerCommands(this, {
+			app: this.app,
+			reveals: this.reveals,
+			clipboard: this.clipboard,
+			settings: () => this.settings,
+		});
 
 		this.registerMarkdownCodeBlockProcessor("clipbook", (source, el, ctx) => {
 			renderClipBook(parseClipBook(source), {
@@ -26,6 +35,8 @@ export default class ClipBookPlugin extends Plugin {
 				containerEl: el,
 				settings: this.settings,
 				reveals: this.reveals,
+				collapse: this.collapse,
+				clipboard: this.clipboard,
 			});
 		});
 
@@ -52,6 +63,10 @@ export default class ClipBookPlugin extends Plugin {
 
 	onunload() {
 		this.reveals.clear();
+		this.collapse.clear();
+		// Leaving a scheduled wipe behind would clear the clipboard from a
+		// plugin that is no longer running.
+		this.clipboard.cancel();
 		this.blurHandlers.clear();
 	}
 

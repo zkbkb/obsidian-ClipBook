@@ -7,8 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ClipBook: Copy value…** — a command that fuzzy-finds any entry across the
+  vault and copies it without opening the note it lives in. Notes with no code
+  block are skipped without being read, and the picker shows a masked value
+  rather than the secret itself.
+- **ClipBook: Hide all revealed values** — one command to re-mask everything,
+  bindable to a hotkey. Escape hides a single revealed value.
+- Deleting an entry now offers an Undo for ten seconds. It restores the line
+  itself rather than relying on the editor's undo stack, which a block rendered
+  without an editor does not have.
+- An optional delay after which a copied masked value is cleared from the
+  clipboard. Off by default; only ever clears the value ClipBook put there.
+
 ### Fixed
 
+- Collapsed sections no longer spring open whenever anything is edited. Collapse
+  state was local to a render, and every write re-renders the block; it is now
+  remembered for the session, without being written to the note.
+- A revealed value could not be hidden again. Every way of activating one led to
+  editing it, so it stayed on screen until the auto-hide timer or a tab switch
+  took it away.
+- A masked value no longer claims `aria-pressed`. Activating a revealed one
+  edits rather than re-masks it, so describing it to a screen reader as a toggle
+  was wrong.
 - Fixed the block rendering as a stack of heavy grey boxes on mobile. Making the
   section headers and row controls real `<button>` elements in 0.2.0 exposed
   them to Obsidian's own button styling, which on mobile adds a fill, a border,

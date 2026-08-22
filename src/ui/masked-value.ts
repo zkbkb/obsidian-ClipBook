@@ -30,18 +30,19 @@ export class MaskedValue {
 
 	paint(): void {
 		const { el, getValue } = this.options;
+		// No `aria-pressed`: activating a revealed value edits it rather than
+		// re-masking it, so calling this a toggle would misdescribe it. The
+		// label carries the state and names the way back instead.
 		if (this.revealed) {
 			el.setText(getValue());
 			el.removeClass("clipbook-masked");
 			el.addClass("clipbook-revealed");
-			el.setAttribute("aria-label", "Click to edit value");
-			el.setAttribute("aria-pressed", "true");
+			el.setAttribute("aria-label", "Value revealed. Edit it, or press Escape to hide it");
 		} else {
 			el.setText(maskValue(getValue()));
 			el.removeClass("clipbook-revealed");
 			el.addClass("clipbook-masked");
-			el.setAttribute("aria-label", "Click to reveal value");
-			el.setAttribute("aria-pressed", "false");
+			el.setAttribute("aria-label", "Reveal value");
 		}
 	}
 

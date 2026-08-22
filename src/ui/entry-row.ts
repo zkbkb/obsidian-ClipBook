@@ -2,10 +2,12 @@ import { Notice, setIcon } from "obsidian";
 import { ClipBookEntry } from "../types";
 import { describeKeyProblem, validateKey } from "../serializer";
 import {
+	DeletedEntry,
 	WriteFailure,
 	deleteEntry,
 	describeWriteFailure,
 	replaceEntry,
+	undoDelete,
 } from "../source-writer";
 import { RenderContext } from "./context";
 import { renderCopyButton } from "./copy";
@@ -25,7 +27,8 @@ export function renderEntry(
 		rc,
 		rowEl,
 		entry.key !== null ? `Copy ${entry.key}` : "Copy value",
-		() => entry.value
+		() => entry.value,
+		entry.masked || rc.settings.defaultMasked
 	);
 	renderDeleteButton(rc, entry, rowEl);
 }
@@ -157,7 +160,16 @@ function renderValue(
 			if (evt.detail === 0) edit();
 		});
 		valueEl.addEventListener("keydown", (evt: KeyboardEvent) => {
-			if (editing || (evt.key !== "Enter" && evt.key !== " ")) return;
+			if (editing) return;
+			// The only way back: activating a revealed value edits it, so
+			// without this a value stays on screen until the timer or a tab
+			// switch takes it away.
+			if (evt.key === "Escape" && mv.isRevealed) {
+				evt.preventDefault();
+				mv.hide();
+				return;
+			}
+			if (evt.key !== "Enter" && evt.key !== " ") return;
 			evt.preventDefault();
 			if (mv.isRevealed) edit();
 			else mv.reveal();
@@ -194,11 +206,48 @@ function renderDeleteButton(
 		deleting = true;
 		deleteBtn.disabled = true;
 		try {
-			await write(deleteEntry(rc, entry));
+			const result = await deleteEntry(rc, entry);
+			if (result.failure !== null) {
+				new Notice(describeWriteFailure(result.failure));
+				return;
+			}
+			offerUndo(rc, entry, result.undo);
 		} finally {
 			deleting = false;
 			deleteBtn.disabled = false;
 		}
+	});
+}
+
+const UNDO_WINDOW_MS = 10000;
+
+/**
+ * Deleting a credential you cannot get back is not something to discover after
+ * the fact. A confirmation on every delete would be heavier than the action
+ * deserves, so the notice carries the way back instead — and it does not rely
+ * on the editor's undo stack, which is not there for a block rendered without
+ * one.
+ */
+function offerUndo(
+	rc: RenderContext,
+	entry: ClipBookEntry,
+	deleted: DeletedEntry
+): void {
+	const message = new DocumentFragment();
+	message.createSpan({
+		text: `Deleted ${entry.key ?? "entry"}. `,
+	});
+	const undoEl = message.createEl("a", {
+		text: "Undo",
+		attr: { href: "#" },
+	});
+
+	const notice = new Notice(message, UNDO_WINDOW_MS);
+	undoEl.addEventListener("click", async (evt) => {
+		evt.preventDefault();
+		notice.hide();
+		const failure = await undoDelete(rc.app, deleted);
+		if (failure !== null) new Notice(describeWriteFailure(failure));
 	});
 }
 

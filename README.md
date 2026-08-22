@@ -65,11 +65,11 @@ Prefix a value with `!` to mask it. Masked values show a truncated form:
 - Medium values (4-10 chars): first 2 + `···`
 - Short values (1-3 chars): `···`
 
-Click a masked value to reveal the full text. Revealed values are automatically re-masked after a configurable timeout or when you switch tabs.
+Click a masked value to reveal the full text. Press Escape to hide it again, or run **ClipBook: Hide all revealed values** to hide every revealed value at once — worth binding to a hotkey. Revealed values are also re-masked automatically after a configurable timeout, and when you switch tabs.
 
 ## Collapsible sections
 
-Sections with a `[Header]` can be collapsed and expanded by clicking the header. You can set sections to start collapsed by default in settings.
+Sections with a `[Header]` can be collapsed and expanded by clicking the header. Collapsing is remembered for the rest of the session, so editing an entry does not spring every section back open. It is not written to the note — collapsing is a way of reading one, not a change to it. You can set sections to start collapsed by default in settings.
 
 ## Inline editing
 
@@ -77,7 +77,7 @@ Click any Key name or Value to edit it in place — the cursor lands right where
 
 Clearing a Key turns the entry into a keyless one. Clearing a Value leaves the entry in place with an empty value (keyless entries excepted — they would disappear entirely, so their value cannot be cleared).
 
-Every row also has a delete button. It appears when you hover or focus the row, and on a touch screen it is always there, dimmed.
+Every row also has a delete button. It appears when you hover or focus the row, and on a touch screen it is always there, dimmed. Deleting shows a notice with an **Undo** link for ten seconds, which works whether or not the note is open in an editor.
 
 Editing is not supported for clipbook blocks nested inside callouts or list items: the source lines carry a prefix ClipBook cannot map back safely, so it declines rather than risk mangling the note.
 
@@ -89,19 +89,34 @@ Click the **+ Add** button at the bottom of any clipbook block to append a new e
 
 Open **Settings > ClipBook** to configure:
 
-| Setting                     | Default   | Description                                                        |
-| --------------------------- | --------- | ------------------------------------------------------------------ |
-| Mask all values by default  | Off       | Mask every value, not just `!`-prefixed ones.                      |
-| Auto-hide revealed values   | On (5 s)  | Re-mask revealed values after a delay (in seconds, or off).        |
-| Hide on tab switch          | On        | Re-mask all revealed values when switching tabs or windows.        |
-| Sections start collapsed    | Off       | Whether sections are collapsed by default.                         |
-| Mask new entries by default | On        | Whether the mask checkbox is checked by default in quick-add.      |
+| Setting                        | Default   | Description                                                          |
+| ------------------------------ | --------- | -------------------------------------------------------------------- |
+| Mask all values by default     | Off       | Mask every value, not just `!`-prefixed ones.                        |
+| Auto-hide revealed values      | On (5 s)  | Re-mask revealed values after a delay (in seconds, or off).          |
+| Hide on tab switch             | On        | Re-mask all revealed values when switching tabs or windows.          |
+| Clear the clipboard after copying | Off    | Empty the clipboard a while after a masked value is copied.          |
+| Sections start collapsed       | Off       | Whether sections are collapsed by default.                           |
+| Mask new entries by default    | On        | Whether the mask checkbox is checked by default in quick-add.        |
+
+Clipboard clearing is off by default because emptying the clipboard is a change
+to something the whole machine shares. When it is on, ClipBook only ever clears
+the value it put there — if you have copied something else since, that is left
+alone — and only for values the note marks as secrets with `!`. It also needs to
+read the clipboard back to make that check, which mobile webviews generally
+refuse outside a user gesture, so on those the clipboard is left as it is.
 
 ## Commands
 
-| Command                          | Description                            |
-| -------------------------------- | -------------------------------------- |
-| ClipBook: Insert clipbook block  | Inserts a template clipbook code block |
+| Command                                | Description                                                       |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| ClipBook: Insert template block        | Inserts a template clipbook code block                            |
+| ClipBook: Copy value…                  | Fuzzy-find any entry in the vault and copy it, without opening the note |
+| ClipBook: Hide all revealed values     | Re-masks every revealed value everywhere                          |
+
+**Copy value…** is the quickest way to use the plugin once you have more than a
+screenful of entries: open the command palette, type part of a key or a note
+name, press Enter. Only blocks at the top level of a note are indexed — one
+nested inside a callout or a list item is not found.
 
 ## Installation
 

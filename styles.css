@@ -66,7 +66,7 @@
 	gap: 4px;
 	padding: 2px 8px 4px;
 	border-bottom: 1px solid var(--background-modifier-border);
-	font-size: var(--font-smaller);
+	font-size: var(--font-ui-smaller, var(--font-smaller));
 	font-weight: 600;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
@@ -77,12 +77,18 @@
 	color: var(--text-muted);
 }
 
+/* One chevron, turned by the header's own ARIA state — so the open/closed
+   state has a single source of truth and the turn can be animated. */
 .clipbook-chevron {
 	display: inline-flex;
 	align-items: center;
 	flex: 0 0 auto;
 	color: var(--text-faint);
-	transition: transform 120ms ease;
+	transition: transform 140ms ease;
+}
+
+.clipbook-section-header[aria-expanded="true"] .clipbook-chevron {
+	transform: rotate(90deg);
 }
 
 .clipbook-chevron svg {
@@ -103,6 +109,7 @@
 	min-height: 30px;
 	padding: 0 4px 0 8px;
 	border-radius: var(--radius-s);
+	transition: background-color 120ms ease;
 }
 
 .clipbook-row:hover {
@@ -208,6 +215,7 @@
 	color: var(--text-faint);
 	opacity: 0;
 	pointer-events: none;
+	transition: opacity 120ms ease, color 120ms ease;
 }
 
 .clipbook-row:hover .clipbook-delete-btn,
@@ -226,7 +234,7 @@
 	gap: 5px;
 	margin-top: 6px;
 	padding: 4px 8px;
-	font-size: var(--font-smaller);
+	font-size: var(--font-ui-smaller, var(--font-smaller));
 }
 
 .clipbook-container button.clipbook-add-btn:hover {
@@ -322,6 +330,51 @@
 	line-height: inherit;
 	text-align: inherit;
 	color: var(--text-normal);
+}
+
+/* --- Copy-value picker -------------------------------------------------- */
+
+.clipbook-suggestion-title {
+	color: var(--text-normal);
+}
+
+.clipbook-suggestion-meta {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	font-size: var(--font-ui-smaller, var(--font-smaller));
+	color: var(--text-muted);
+}
+
+.clipbook-suggestion-value {
+	flex: 0 1 auto;
+	min-width: 0;
+	font-family: var(--font-monospace);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.clipbook-suggestion-path {
+	flex: 0 1 auto;
+	min-width: 0;
+	margin-left: auto;
+	color: var(--text-faint);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --- Motion -------------------------------------------------------------- */
+
+/* Everything above animates only as a courtesy. Readers who have asked the
+   system for less motion get the same states, arrived at instantly. */
+@media (prefers-reduced-motion: reduce) {
+	.clipbook-chevron,
+	.clipbook-row,
+	.clipbook-container button.clipbook-delete-btn {
+		transition: none;
+	}
 }
 
 /* --- Touch -------------------------------------------------------------- */
