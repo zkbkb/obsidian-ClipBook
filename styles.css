@@ -349,10 +349,12 @@
 		padding: 0 8px;
 	}
 
-	/* No hover to reveal it with, so delete stays out until the row is
-	   the one being interacted with. */
-	.clipbook-row:active .clipbook-delete-btn {
-		opacity: 1;
+	/* There is no hover to reveal it with, and revealing it on :active is too
+	   late: the press has already hit-tested straight through the hidden
+	   button to the row, so the tap never reaches it. It stays present and
+	   tappable instead, receding by weight rather than by absence. */
+	.clipbook-container button.clipbook-delete-btn {
+		opacity: 0.55;
 		pointer-events: auto;
 	}
 
@@ -394,7 +396,13 @@
 		color: var(--text-muted);
 	}
 
-	.clipbook-container button {
+	/* Chrome does not belong on paper. Written per-control and at the same
+	   specificity as the reset above — a plain `.clipbook-container button`
+	   loses to it and quietly prints every button. Section headers are left
+	   alone: they are the group labels, not controls. */
+	.clipbook-container button.clipbook-icon-btn,
+	.clipbook-container button.clipbook-add-btn,
+	.clipbook-add-form {
 		display: none;
 	}
 }

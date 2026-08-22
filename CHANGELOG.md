@@ -32,8 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Touch targets grow to 36–38px on coarse pointers without the controls
   themselves growing, and the quick-add form stacks its labels above its fields
   the way the app's own mobile settings do.
-- Copy and delete are no longer visually equal: delete rests fainter and stays
-  hidden until the row is hovered, focused, or pressed.
+- Copy and delete are no longer visually equal. Delete stays out of the way
+  until the row is hovered or focused where there is a pointer to do it with,
+  and rests faint but always tappable on a touch screen — revealing it on press
+  cannot work, because the press has already gone through it to the row.
 - The quick-add form's own buttons are left unstyled so they render as
   Obsidian's native and accent buttons, and its inputs keep the app's sizing —
   which is what stops iOS zooming in when one is focused.

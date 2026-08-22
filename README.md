@@ -77,7 +77,7 @@ Click any Key name or Value to edit it in place — the cursor lands right where
 
 Clearing a Key turns the entry into a keyless one. Clearing a Value leaves the entry in place with an empty value (keyless entries excepted — they would disappear entirely, so their value cannot be cleared).
 
-Every row also has a delete button, which appears when you hover or focus the row — or, on a touch screen, while you press it.
+Every row also has a delete button. It appears when you hover or focus the row, and on a touch screen it is always there, dimmed.
 
 Editing is not supported for clipbook blocks nested inside callouts or list items: the source lines carry a prefix ClipBook cannot map back safely, so it declines rather than risk mangling the note.
 
