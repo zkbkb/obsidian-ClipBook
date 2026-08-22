@@ -15,7 +15,7 @@ export function renderCopyButton(
 	getValue: () => string
 ): HTMLButtonElement {
 	const buttonEl = parentEl.createEl("button", {
-		cls: "clipbook-icon-btn clipbook-copy-btn",
+		cls: "clipbook-btn clipbook-icon-btn clipbook-copy-btn",
 		attr: { type: "button", "aria-label": ariaLabel },
 	});
 	setIcon(buttonEl, "copy");

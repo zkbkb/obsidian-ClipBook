@@ -1,71 +1,107 @@
 /* ClipBook – Code Block Renderer Styles */
 
 .clipbook-container {
-	padding: 8px 0;
+	padding: 4px 0;
 }
 
 .clipbook-empty {
 	color: var(--text-muted);
 	font-style: italic;
-	padding: 8px 12px;
+	padding: 6px 8px;
 }
 
-/* Section */
-.clipbook-section {
-	margin-bottom: 4px;
-}
-
-/* Section header (collapsible) — a real <button>, reset to look like a label */
-.clipbook-section-header {
+/* --- Button reset -------------------------------------------------------
+   Obsidian styles bare <button> heavily, and more heavily still on mobile:
+   a fill, a border, a shadow, inflated padding, and centred content. Those
+   rules are written as `.is-mobile button`, so a single-class selector loses
+   to them. Everything the app sets has to be reset here, at a specificity
+   that wins. Controls that should look like buttons — the quick-add form's
+   own — deliberately keep Obsidian's native styling instead. */
+.clipbook-container button.clipbook-btn {
+	appearance: none;
+	-webkit-appearance: none;
 	display: flex;
 	align-items: center;
-	width: 100%;
-	box-shadow: none;
-	background: none;
+	justify-content: flex-start;
+	box-sizing: border-box;
+	width: auto;
+	height: auto;
+	min-width: 0;
+	min-height: 0;
+	max-width: 100%;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	background-color: transparent;
 	border: none;
-	border-bottom: 1px solid var(--background-modifier-border);
-	border-radius: 0;
-	text-align: left;
+	border-radius: var(--radius-s);
+	box-shadow: none;
 	font-family: inherit;
-	font-size: var(--font-smaller);
-	font-weight: 600;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	text-align: left;
 	color: var(--text-muted);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	padding: 6px 12px 2px;
-	margin-bottom: 2px;
 	cursor: pointer;
 	-webkit-user-select: none;
 	user-select: none;
+	-webkit-tap-highlight-color: transparent;
 }
 
-.clipbook-section-header:hover {
-	color: var(--text-normal);
-	background: none;
+.clipbook-container button.clipbook-btn:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -1px;
+}
+
+/* --- Sections ----------------------------------------------------------- */
+
+.clipbook-section + .clipbook-section {
+	margin-top: 10px;
+}
+
+/* A quiet label, not a filled bar: the entries are the content, the section
+   name is only a divider with a word on it. */
+.clipbook-container button.clipbook-section-header {
+	width: 100%;
+	gap: 4px;
+	padding: 2px 8px 4px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: var(--font-smaller);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-faint);
+}
+
+.clipbook-container button.clipbook-section-header:hover {
+	color: var(--text-muted);
 }
 
 .clipbook-chevron {
 	display: inline-flex;
 	align-items: center;
-	margin-right: 4px;
+	flex: 0 0 auto;
+	color: var(--text-faint);
+	transition: transform 120ms ease;
 }
 
 .clipbook-chevron svg {
-	width: 12px;
-	height: 12px;
+	width: 13px;
+	height: 13px;
 }
 
-/* Collapsed entries container */
 .clipbook-entries.clipbook-collapsed {
 	display: none;
 }
 
-/* Entry row */
+/* --- Entry rows --------------------------------------------------------- */
+
 .clipbook-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 3px 12px;
+	min-height: 30px;
+	padding: 0 4px 0 8px;
 	border-radius: var(--radius-s);
 }
 
@@ -73,23 +109,29 @@
 	background-color: var(--background-modifier-hover);
 }
 
-/* Key label */
+/* Does not shrink: the key is what identifies the row, so a value that grows —
+   a revealed secret, an open editor — takes the remaining space rather than
+   crushing the key to an ellipsis. The cap keeps a long key from doing the
+   same thing to the value. */
 .clipbook-key {
 	flex: 0 0 auto;
-	min-width: 80px;
-	max-width: 200px;
-	font-weight: 500;
+	min-width: 0;
+	max-width: 60%;
 	color: var(--text-normal);
+	font-size: var(--font-smaller);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	cursor: text;
 }
 
-/* Value */
+/* Values sit against the copy button in one right-hand column, so the part
+   of a masked value that identifies it stays put as key lengths vary. */
 .clipbook-value {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	min-width: 0;
+	margin-left: auto;
+	text-align: right;
 	font-family: var(--font-monospace);
 	font-size: var(--font-smaller);
 	color: var(--text-muted);
@@ -101,12 +143,13 @@
 	user-select: none;
 }
 
-/* Keyless entry value — takes full width */
+/* A keyless entry may use the whole row, but still lands in the value
+   column, so a block that mixes keyed and keyless entries reads as one list
+   rather than two ragged ones. */
 .clipbook-value-full {
-	flex: 1 1 100%;
+	flex: 1 1 auto;
 }
 
-/* Stand-in so a cleared value stays clickable */
 .clipbook-value:empty::after {
 	content: "(empty)";
 	font-style: italic;
@@ -121,47 +164,48 @@
 	color: var(--text-normal);
 }
 
+/* Revealing a value is pointless if the ellipsis that keeps masked rows on one
+   line then cuts it off — which is what happened to any secret longer than the
+   row, every time, on a phone. Let a revealed value wrap and take the space. */
 .clipbook-revealed {
+	flex: 1 1 auto;
 	color: var(--text-normal);
+	text-align: left;
+	white-space: normal;
+	overflow: visible;
+	overflow-wrap: anywhere;
 	-webkit-user-select: text;
 	user-select: text;
 }
 
-/* Icon buttons (copy, delete) */
-.clipbook-icon-btn {
+/* --- Row buttons -------------------------------------------------------- */
+
+.clipbook-container button.clipbook-icon-btn {
 	flex: 0 0 auto;
-	display: flex;
-	align-items: center;
 	justify-content: center;
 	width: 28px;
 	height: 28px;
-	padding: 0;
-	background: none;
-	border: none;
-	box-shadow: none;
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	color: var(--text-muted);
 }
 
-.clipbook-icon-btn:hover {
+.clipbook-container button.clipbook-icon-btn:hover {
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 }
 
 .clipbook-icon-btn svg {
-	width: 14px;
-	height: 14px;
+	width: 15px;
+	height: 15px;
 }
 
-.clipbook-copied,
-.clipbook-copied:hover {
+.clipbook-container button.clipbook-copied,
+.clipbook-container button.clipbook-copied:hover {
 	color: var(--text-success, var(--interactive-success));
 }
 
-/* Delete stays out of the way until the row is hovered or focused, so it is
-   never an accidental neighbour of the copy button. */
-.clipbook-delete-btn {
+/* Copy is the reason this plugin exists; delete is a rarely wanted
+   neighbour. Keep them visually ranked rather than equal. */
+.clipbook-container button.clipbook-delete-btn {
+	color: var(--text-faint);
 	opacity: 0;
 	pointer-events: none;
 }
@@ -172,37 +216,20 @@
 	pointer-events: auto;
 }
 
-.clipbook-delete-btn:hover {
+.clipbook-container button.clipbook-delete-btn:hover {
 	color: var(--text-error);
 }
 
-@media (hover: none) {
-	.clipbook-delete-btn {
-		opacity: 1;
-		pointer-events: auto;
-	}
-}
+/* --- Quick add ---------------------------------------------------------- */
 
-/* Quick-add button */
-.clipbook-add-btn {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 12px;
-	margin-top: 4px;
-	background: none;
-	border: none;
-	box-shadow: none;
-	border-radius: var(--radius-s);
-	font-family: inherit;
+.clipbook-container button.clipbook-add-btn {
+	gap: 5px;
+	margin-top: 6px;
+	padding: 4px 8px;
 	font-size: var(--font-smaller);
-	color: var(--text-muted);
-	cursor: pointer;
-	-webkit-user-select: none;
-	user-select: none;
 }
 
-.clipbook-add-btn:hover {
+.clipbook-container button.clipbook-add-btn:hover {
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 }
@@ -217,14 +244,13 @@
 	height: 14px;
 }
 
-/* Quick-add form */
 .clipbook-add-form {
-	padding: 8px 12px;
-	margin-top: 4px;
-	border-top: 1px solid var(--background-modifier-border);
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
+	margin-top: 6px;
+	padding: 10px 8px 4px;
+	border-top: 1px solid var(--background-modifier-border);
 }
 
 .clipbook-add-form-row {
@@ -234,79 +260,44 @@
 }
 
 .clipbook-add-form-label {
-	flex: 0 0 60px;
+	flex: 0 0 52px;
 	font-size: var(--font-smaller);
 	color: var(--text-muted);
 }
 
-.clipbook-add-form-input {
+/* Size and chrome are left to Obsidian — on mobile it enlarges inputs on
+   purpose, which is also what stops iOS zooming in on focus. Only the
+   typeface is ours, at a specificity that survives the app's own rules. */
+.clipbook-add-form input.clipbook-add-form-input {
 	flex: 1 1 auto;
 	min-width: 0;
 	font-family: var(--font-monospace);
-	font-size: var(--font-smaller);
-	padding: 4px 8px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	background-color: var(--background-primary);
-	color: var(--text-normal);
-}
-
-.clipbook-add-form-input:focus {
-	border-color: var(--interactive-accent);
-	outline: none;
 }
 
 .clipbook-add-form-checkbox-label {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 6px;
+	margin-left: 60px;
 	font-size: var(--font-smaller);
 	color: var(--text-muted);
 	cursor: pointer;
-	margin-left: 68px;
 }
 
 .clipbook-add-form-actions {
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;
-	margin-top: 2px;
 }
 
-.clipbook-add-form-cancel,
-.clipbook-add-form-submit {
-	font-size: var(--font-smaller);
-	padding: 4px 12px;
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	color: var(--text-normal);
-}
+/* --- Inline editing ----------------------------------------------------- */
 
-.clipbook-add-form-cancel:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-.clipbook-add-form-submit {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-}
-
-.clipbook-add-form-submit:hover {
-	opacity: 0.9;
-}
-
-.clipbook-add-form-submit:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-/* Inline editing — the element hosts a plain text input while being edited */
+/* Typing always reads left to right, whichever column the field lives in. */
 .clipbook-editing {
 	display: flex;
+	flex: 1 1 auto;
 	overflow: visible;
+	text-align: left;
 	background-color: var(--background-modifier-hover);
 	border-radius: var(--radius-s);
 	cursor: text;
@@ -317,6 +308,7 @@
 	width: 100%;
 	min-width: 0;
 	height: auto;
+	min-height: 0;
 	padding: 0 2px;
 	margin: 0;
 	background: none;
@@ -328,8 +320,61 @@
 	font-size: inherit;
 	font-weight: inherit;
 	line-height: inherit;
+	text-align: inherit;
 	color: var(--text-normal);
 }
+
+/* --- Touch -------------------------------------------------------------- */
+
+/* Coarse pointers need a bigger target, but not a bigger-looking control:
+   the hit area grows, the icon does not. */
+@media (pointer: coarse) {
+	.clipbook-row {
+		min-height: 38px;
+		gap: 10px;
+	}
+
+	.clipbook-container button.clipbook-icon-btn {
+		width: 36px;
+		height: 36px;
+	}
+
+	.clipbook-container button.clipbook-section-header {
+		min-height: 30px;
+		padding-bottom: 6px;
+	}
+
+	.clipbook-container button.clipbook-add-btn {
+		min-height: 36px;
+		padding: 0 8px;
+	}
+
+	/* No hover to reveal it with, so delete stays out until the row is
+	   the one being interacted with. */
+	.clipbook-row:active .clipbook-delete-btn {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* Labels above their fields, the way the app's own mobile settings read —
+	   side by side leaves too little room for a full-width touch input. */
+	.clipbook-add-form-row {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 4px;
+	}
+
+	.clipbook-add-form-label {
+		flex: 0 0 auto;
+	}
+
+	.clipbook-add-form-checkbox-label {
+		margin-left: 0;
+		min-height: 32px;
+	}
+}
+
+/* --- Print -------------------------------------------------------------- */
 
 /* Values marked as secrets must not survive into a print-out or PDF export. */
 @media print {
@@ -345,12 +390,11 @@
 		visibility: visible;
 		position: absolute;
 		top: 0;
-		left: 0;
+		right: 0;
 		color: var(--text-muted);
 	}
 
-	.clipbook-icon-btn,
-	.clipbook-add-btn {
+	.clipbook-container button {
 		display: none;
 	}
 }

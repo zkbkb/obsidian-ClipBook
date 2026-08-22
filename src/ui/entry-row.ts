@@ -176,7 +176,7 @@ function renderDeleteButton(
 	rowEl: HTMLElement
 ): void {
 	const deleteBtn = rowEl.createEl("button", {
-		cls: "clipbook-icon-btn clipbook-delete-btn",
+		cls: "clipbook-btn clipbook-icon-btn clipbook-delete-btn",
 		attr: {
 			type: "button",
 			"aria-label":

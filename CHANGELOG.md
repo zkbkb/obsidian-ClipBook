@@ -5,6 +5,39 @@ All notable changes to ClipBook will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed the block rendering as a stack of heavy grey boxes on mobile. Making the
+  section headers and row controls real `<button>` elements in 0.2.0 exposed
+  them to Obsidian's own button styling, which on mobile adds a fill, a border,
+  a shadow, inflated padding, and centred content. Those rules are written as
+  `.is-mobile button`, so the plugin's single-class rules lost to them; the
+  reset now covers every property the app sets, at a specificity that wins.
+- Fixed a revealed value still being cut off by the ellipsis meant for masked
+  rows. Any secret longer than the row was unreadable however many times you
+  tapped it — most of them, on a phone. A revealed value now wraps and takes
+  the space it needs.
+- Fixed a long value crushing its key to an ellipsis while revealed or being
+  edited. The key identifies the row, so it now keeps its width and the value
+  takes what is left.
+
+### Changed
+
+- Section headers read as quiet labels over a hairline rule rather than as
+  filled bars, and values line up in one column against the copy button instead
+  of trailing each key at a different offset. Keyless entries join that column
+  too, so a mixed block reads as one list.
+- Touch targets grow to 36–38px on coarse pointers without the controls
+  themselves growing, and the quick-add form stacks its labels above its fields
+  the way the app's own mobile settings do.
+- Copy and delete are no longer visually equal: delete rests fainter and stays
+  hidden until the row is hovered, focused, or pressed.
+- The quick-add form's own buttons are left unstyled so they render as
+  Obsidian's native and accent buttons, and its inputs keep the app's sizing —
+  which is what stops iOS zooming in when one is focused.
+
 ## [0.2.0] - 2026-08-21
 
 ### Fixed

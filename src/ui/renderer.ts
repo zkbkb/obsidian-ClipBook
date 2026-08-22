@@ -50,7 +50,7 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 	}
 
 	const headerEl = sectionEl.createEl("button", {
-		cls: "clipbook-section-header",
+		cls: "clipbook-btn clipbook-section-header",
 		attr: { type: "button" },
 	});
 	const chevronEl = headerEl.createSpan({ cls: "clipbook-chevron" });
