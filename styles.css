@@ -1,7 +1,39 @@
 /* ClipBook – Code Block Renderer Styles */
 
+/*
+ * Sections flow into as many columns as the block is wide enough to hold.
+ *
+ * A credentials block is mostly short groups, so on a desktop width half of it
+ * was empty and every value sat an inch from the key it belongs to. Columns
+ * spend that width on the rows instead: two narrower columns put each value
+ * back beside its own key.
+ *
+ * The section is the unit, not the entry. Splitting entries across columns
+ * would put the copy buttons at two different places on the page, and scanning
+ * a list of key names is exactly the thing that wants one straight line to
+ * follow.
+ *
+ * 24rem is a floor, not a preference: below about that, a masked value starts
+ * losing its last four characters to the ellipsis — and those four are the
+ * whole of what tells two masked keys apart. A narrower column would buy
+ * density by making the values useless.
+ */
 .clipbook-container {
 	padding: 4px 0;
+	columns: 24rem auto;
+	column-gap: 28px;
+}
+
+/* A group is never split down the middle. */
+.clipbook-section {
+	break-inside: avoid;
+}
+
+/* The block's own chrome sits under all of it, not inside a column. */
+.clipbook-container > .clipbook-add-btn,
+.clipbook-container > .clipbook-add-form,
+.clipbook-empty {
+	column-span: all;
 }
 
 .clipbook-empty {
@@ -56,16 +88,25 @@
 /* --- Sections ----------------------------------------------------------- */
 
 .clipbook-section + .clipbook-section {
-	margin-top: 10px;
+	margin-top: 14px;
 }
 
-/* A quiet label, not a filled bar: the entries are the content, the section
-   name is only a divider with a word on it. */
+/* The header line: the collapse toggle, and the section's own add button.
+   Siblings rather than nested, since a button inside a button is neither valid
+   nor activatable. */
+.clipbook-section-head {
+	display: flex;
+	align-items: center;
+}
+
+/* A quiet label, and nothing else: no fill, and no rule under it either. The
+   uppercase weight and the gap above already say where a group begins, and a
+   line every few rows competes with the entries for attention. */
 .clipbook-container button.clipbook-section-header {
-	width: 100%;
+	flex: 1 1 auto;
+	min-width: 0;
 	gap: 4px;
 	padding: 2px 8px 4px;
-	border-bottom: 1px solid var(--background-modifier-border);
 	font-size: var(--font-ui-smaller, var(--font-smaller));
 	font-weight: 600;
 	letter-spacing: 0.04em;
@@ -75,6 +116,34 @@
 
 .clipbook-container button.clipbook-section-header:hover {
 	color: var(--text-muted);
+}
+
+/* Adding to a section you can already see should not mean telling a form which
+   section you meant. Rests hidden like the other idle chrome. */
+.clipbook-container button.clipbook-section-add {
+	width: 24px;
+	height: 24px;
+	color: var(--text-faint);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease, color 120ms ease;
+}
+
+.clipbook-container button.clipbook-section-add svg {
+	width: 13px;
+	height: 13px;
+}
+
+.clipbook-section-head:hover .clipbook-section-add,
+.clipbook-section-head:focus-within .clipbook-section-add,
+.clipbook-container button.clipbook-section-add[aria-expanded="true"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.clipbook-container button.clipbook-section-add:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
 }
 
 /* One chevron, turned by the header's own ARIA state — so the open/closed
@@ -96,8 +165,29 @@
 	height: 13px;
 }
 
+/* Collapsing animates the grid row from 1fr to 0fr, which is why the entries
+   need a wrapper to measure. Engines without that interpolation still apply
+   0fr, so it snaps shut exactly as it used to. */
+.clipbook-entries {
+	display: grid;
+	grid-template-rows: 1fr;
+	transition: grid-template-rows 160ms ease;
+}
+
+.clipbook-entries-inner {
+	min-height: 0;
+	overflow: hidden;
+}
+
 .clipbook-entries.clipbook-collapsed {
-	display: none;
+	grid-template-rows: 0fr;
+}
+
+/* Collapsed rows must leave the tab order and the accessibility tree, not just
+   the view. The delay holds them visible for the length of the collapse. */
+.clipbook-entries.clipbook-collapsed .clipbook-entries-inner {
+	visibility: hidden;
+	transition: visibility 0s linear 160ms;
 }
 
 /* --- Entry rows --------------------------------------------------------- */
@@ -230,11 +320,25 @@
 
 /* --- Quick add ---------------------------------------------------------- */
 
+/* Chrome the reader only needs when reaching for it. Same trick as delete:
+   hovering the block is what makes it both visible and clickable, so a blind
+   click can never land on an invisible control. */
 .clipbook-container button.clipbook-add-btn {
 	gap: 5px;
 	margin-top: 6px;
 	padding: 4px 8px;
 	font-size: var(--font-ui-smaller, var(--font-smaller));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease, color 120ms ease,
+		background-color 120ms ease;
+}
+
+.clipbook-container:hover button.clipbook-add-btn,
+.clipbook-container:focus-within button.clipbook-add-btn,
+.clipbook-container button.clipbook-add-btn[aria-expanded="true"] {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 .clipbook-container button.clipbook-add-btn:hover {
@@ -279,6 +383,13 @@
 .clipbook-add-form input.clipbook-add-form-input {
 	flex: 1 1 auto;
 	min-width: 0;
+}
+
+/* Monospace where it earns its keep: a secret is read character by character,
+   and `l1I` needs to be three different shapes. A section or key name is read
+   as a word, so it takes the app's own input font like every other field in
+   Obsidian. */
+.clipbook-add-form input.clipbook-add-form-value {
 	font-family: var(--font-monospace);
 }
 
@@ -372,12 +483,43 @@
 @media (prefers-reduced-motion: reduce) {
 	.clipbook-chevron,
 	.clipbook-row,
-	.clipbook-container button.clipbook-delete-btn {
+	.clipbook-entries,
+	.clipbook-entries-inner,
+	/* Named in full so it outranks the collapsed rule's 160ms delay, which is
+	   there to hold the rows visible for an animation no longer playing. Left
+	   in, it keeps collapsed rows in the tab order after they have gone. */
+	.clipbook-entries.clipbook-collapsed .clipbook-entries-inner,
+	.clipbook-container button.clipbook-delete-btn,
+	.clipbook-container button.clipbook-add-btn,
+	.clipbook-container button.clipbook-section-add {
 		transition: none;
 	}
 }
 
 /* --- Touch -------------------------------------------------------------- */
+
+/* Two questions, two queries. What size should a control be? — that follows
+   the pointer actually in use, so `pointer: coarse`. Can a control afford to
+   hide until hovered? — that follows whether a touchscreen exists at all, so
+   `any-pointer: coarse`. On a laptop with a touchscreen the first is false
+   while the second is true, and asking only the first leaves these controls
+   invisible and untappable for anyone who reaches up to the screen. */
+@media (any-pointer: coarse) {
+	/* Nothing to hover with, so they stay out. Revealing on :active is too
+	   late: the press has already hit-tested straight through the hidden
+	   button to the row, so the tap never reaches it. */
+	.clipbook-container button.clipbook-section-add,
+	.clipbook-container button.clipbook-add-btn {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* Delete stays ranked below copy — receding by weight, not by absence. */
+	.clipbook-container button.clipbook-delete-btn {
+		opacity: 0.55;
+		pointer-events: auto;
+	}
+}
 
 /* Coarse pointers need a bigger target, but not a bigger-looking control:
    the hit area grows, the icon does not. */
@@ -397,18 +539,14 @@
 		padding-bottom: 6px;
 	}
 
+	.clipbook-container button.clipbook-section-add {
+		width: 32px;
+		height: 32px;
+	}
+
 	.clipbook-container button.clipbook-add-btn {
 		min-height: 36px;
 		padding: 0 8px;
-	}
-
-	/* There is no hover to reveal it with, and revealing it on :active is too
-	   late: the press has already hit-tested straight through the hidden
-	   button to the row, so the tap never reaches it. It stays present and
-	   tappable instead, receding by weight rather than by absence. */
-	.clipbook-container button.clipbook-delete-btn {
-		opacity: 0.55;
-		pointer-events: auto;
 	}
 
 	/* Labels above their fields, the way the app's own mobile settings read —

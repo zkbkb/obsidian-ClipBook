@@ -3,7 +3,7 @@
  * Short values get progressively more hidden.
  *
  * Examples (with default mask "···"):
- *   "sk-proj-abc123def456" → "sk-···f456"
+ *   "EXAMPLE-0000000000000000" → "EXA···0000"
  *   "us-east-1" (9 chars)  → "us···"     (≤10 chars: first 2 + mask)
  *   "ab" (2 chars)          → "···"       (≤3 chars: fully hidden)
  *   ""                      → ""          (nothing to hide)

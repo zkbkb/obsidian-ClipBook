@@ -73,7 +73,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 	}
 
 	/** A delay left empty or nonsensical on the way out falls back to its default. */
-	hide(): void {
+	override hide(): void {
 		let repaired = false;
 		for (const field of this.durationFields) {
 			// Zero means the feature is off; there is no delay to validate.
@@ -91,7 +91,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 		});
 	}
 
-	display(): void {
+	override display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 		this.durationFields = [];

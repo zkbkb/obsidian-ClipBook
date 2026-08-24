@@ -18,7 +18,7 @@ export default class ClipBookPlugin extends Plugin {
 	private readonly clipboard = new ClipboardGuard(window);
 	private readonly blurHandlers = new Map<Window, Component>();
 
-	async onload() {
+	override async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new ClipBookSettingTab(this.app, this));
 		registerCommands(this, {
@@ -61,7 +61,7 @@ export default class ClipBookPlugin extends Plugin {
 		);
 	}
 
-	onunload() {
+	override onunload() {
 		this.reveals.clear();
 		this.collapse.clear();
 		// Leaving a scheduled wipe behind would clear the clipboard from a

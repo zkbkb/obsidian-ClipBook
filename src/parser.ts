@@ -22,8 +22,10 @@ export function classifyLine(rawLine: string): ClassifiedLine {
 	if (line === "") return { kind: "blank" };
 	if (line.startsWith("#") || line.startsWith(";")) return { kind: "comment" };
 
-	const sectionMatch = line.match(SECTION_RE);
-	if (sectionMatch) return { kind: "section", name: sectionMatch[1].trim() };
+	const sectionName = SECTION_RE.exec(line)?.[1];
+	if (sectionName !== undefined) {
+		return { kind: "section", name: sectionName.trim() };
+	}
 
 	// `Key = Value` — split on the first `=` only, so values may contain `=`.
 	const eqIndex = line.indexOf("=");
@@ -63,8 +65,8 @@ export function parseClipBook(source: string): ClipBookData {
 		}
 	};
 
-	for (let i = 0; i < lines.length; i++) {
-		const classified = classifyLine(lines[i]);
+	for (const [i, line] of lines.entries()) {
+		const classified = classifyLine(line);
 
 		switch (classified.kind) {
 			case "blank":
@@ -84,7 +86,7 @@ export function parseClipBook(source: string): ClipBookData {
 					value: classified.value,
 					masked: classified.masked,
 					sourceLine: i,
-					raw: lines[i],
+					raw: line,
 				});
 				break;
 		}

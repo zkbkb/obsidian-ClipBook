@@ -1,23 +1,31 @@
 {
 	"name": "obsidian-clipbook",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Obsidian plugin for managing copyable text snippets in structured code blocks",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"build": "npm run typecheck && node esbuild.config.mjs production",
+		"typecheck": "tsc --noEmit",
+		"lint": "eslint .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"check": "npm run typecheck && npm run lint && npm run test",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
-		"esbuild": "0.17.3",
-		"obsidian": "latest",
-		"tslib": "2.4.0",
-		"typescript": "4.7.4"
+		"@eslint/js": "^9.17.0",
+		"@types/node": "^22.10.2",
+		"esbuild": "^0.28.2",
+		"eslint": "^9.17.0",
+		"happy-dom": "^20.11.6",
+		"obsidian": "~1.1.1",
+		"tslib": "^2.8.1",
+		"typescript": "^5.7.2",
+		"typescript-eslint": "^8.18.1",
+		"vitest": "^4.1.11"
 	}
 }

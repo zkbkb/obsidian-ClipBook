@@ -8,16 +8,16 @@ Create a fenced code block with the `clipbook` language identifier in any note:
 
 ````markdown
 ```clipbook
-API Token = !sk-proj-abc123def456
+API Token = !EXAMPLE-0000000000000000
 Region = us-east-1
 
 [AWS]
-Access Key = !AKIA1234EXAMPLE
-Secret Key = !wJalrXUtnFEMI/K7MDENG
+Access Key = !AKIA-EXAMPLE-0000
+Secret Key = !EXAMPLE-0000000000000000
 Region = us-east-1
 
 [GitHub]
-PAT = !ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PAT = !ghp_EXAMPLE-0000
 Username = octocat
 ```
 ````
@@ -29,7 +29,7 @@ In reading view, ClipBook renders this as a compact, structured list with copy b
 | Syntax                       | Meaning                                                                                              |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `Key = Value`                | A copyable entry. The full value is copied on click.                                                 |
-| `Key = !Value`               | A masked entry. The value is hidden by default (e.g., `sk-···f456`). Click the value to reveal it.   |
+| `Key = !Value`               | A masked entry. The value is hidden by default (e.g., `EXA···0000`). Click the value to reveal it.   |
 | `!Value`                     | A keyless masked entry (bare line, no key label).                                                    |
 | `= Value`                    | A keyless plain entry (no key label).                                                                |
 | `[Section Name]`             | A section header to group entries visually. Click to collapse/expand.                                |
@@ -85,6 +85,15 @@ Editing is not supported for clipbook blocks nested inside callouts or list item
 
 Click the **+ Add** button at the bottom of any clipbook block to append a new entry. The inline form lets you choose a section, key, value, and mask toggle, then writes directly back to the markdown source. New entries are appended to the end of their section, and a section that does not exist yet is created.
 
+Each section header also has its own **+**, which opens the same form next to that section with the section already filled in — so adding to a section you can see does not mean telling a form which one you meant.
+
+## Keyboard
+
+Each entry is a single tab stop. Tab moves between entries; the arrow keys move
+between a row's key, value, copy and delete; Home and End jump to the ends of a
+row. Enter or Space activates whatever is focused — revealing a masked value,
+editing a key, copying. Escape hides a revealed value, and cancels an edit.
+
 ## Settings
 
 Open **Settings > ClipBook** to configure:
@@ -127,6 +136,24 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault at:
 ```
 
 Then enable ClipBook in **Settings > Community plugins**.
+
+## Development
+
+```bash
+npm install
+npm run dev     # watch build into main.js
+npm run check   # typecheck, lint and test — what CI runs
+npm test        # tests only
+```
+
+The Obsidian typings are pinned to the `minAppVersion` in `manifest.json`, so an
+API newer than the plugin claims to support fails to compile. Raising one means
+raising the other.
+
+Keep example values in docs and fixtures obviously fake — `EXAMPLE-0000…` rather
+than something shaped like a real key. Secret scanners match on shape and on
+nearby words like "token", so a realistic-looking placeholder produces a real
+alert, and repeated false alerts are how a scanner stops being read.
 
 ## Known limitations
 

@@ -2,8 +2,8 @@ export interface InlineEditOptions {
 	/** Allow saving an empty string. Off by default — an empty edit cancels. */
 	allowEmpty?: boolean;
 	/** Where to put the caret. Defaults to selecting the whole text. */
-	caretIndex?: number;
-	ariaLabel?: string;
+	caretIndex?: number | undefined;
+	ariaLabel?: string | undefined;
 }
 
 /**

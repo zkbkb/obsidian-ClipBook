@@ -1,5 +1,6 @@
-import { classifyLine } from "./parser";
+import { ClassifiedLine, classifyLine } from "./parser";
 import { buildSectionLine } from "./serializer";
+import { SectionRef } from "./types";
 
 /**
  * Pure transforms over the *body* of a clipbook block — the lines strictly
@@ -28,22 +29,22 @@ export function removeEntryLine(
 }
 
 /**
- * Insert an entry into `sectionName`, creating the section if it does not exist.
- * A null section means the orphan group that precedes the first `[Section]`.
+ * Insert an entry into `section`, creating the section if it does not exist.
+ * A null name means the orphan group that precedes the first `[Section]`.
  */
 export function insertEntryLine(
 	body: readonly string[],
-	sectionName: string | null,
+	section: SectionRef,
 	entryLine: string
 ): string[] {
 	const next = body.slice();
 
-	if (sectionName === null) {
+	if (section.name === null) {
 		next.splice(orphanInsertIndex(next), 0, entryLine);
 		return next;
 	}
 
-	const headerIndex = findSectionHeader(next, sectionName);
+	const headerIndex = findSectionHeader(next, section.name, section.occurrence);
 	if (headerIndex !== -1) {
 		next.splice(sectionInsertIndex(next, headerIndex), 0, entryLine);
 		return next;
@@ -52,24 +53,48 @@ export function insertEntryLine(
 	// New section, appended after the existing content.
 	const end = lastContentIndex(next) + 1;
 	const separator = end > 0 ? [""] : [];
-	next.splice(end, 0, ...separator, buildSectionLine(sectionName), entryLine);
+	next.splice(end, 0, ...separator, buildSectionLine(section.name), entryLine);
 	return next;
 }
 
-/** Orphan entries must stay ahead of the first section header. */
+/**
+ * Orphan entries must stay ahead of the first section header, and — like a
+ * named section's entries — sit directly after the last of their own rather
+ * than drifting past a blank line to the bottom of the group.
+ */
 function orphanInsertIndex(body: readonly string[]): number {
+	let lastEntry = -1;
+	let firstSection = -1;
 	for (let i = 0; i < body.length; i++) {
-		if (classifyLine(body[i]).kind === "section") return i;
+		const line = classifyAt(body, i);
+		if (line.kind === "section") {
+			firstSection = i;
+			break;
+		}
+		if (line.kind === "entry") lastEntry = i;
 	}
-	return lastContentIndex(body) + 1;
+
+	if (lastEntry !== -1) return lastEntry + 1;
+	// Nothing to sit with yet: go ahead of the first section, or at the end.
+	return firstSection !== -1 ? firstSection : lastContentIndex(body) + 1;
 }
 
-function findSectionHeader(body: readonly string[], name: string): number {
+function findSectionHeader(
+	body: readonly string[],
+	name: string,
+	occurrence: number
+): number {
+	const headers: number[] = [];
 	for (let i = 0; i < body.length; i++) {
-		const line = classifyLine(body[i]);
-		if (line.kind === "section" && line.name === name) return i;
+		const line = classifyAt(body, i);
+		if (line.kind === "section" && line.name === name) headers.push(i);
 	}
-	return -1;
+	if (headers.length === 0) return -1;
+	// Clamped rather than missed. If the note lost a group of this name between
+	// the render and the write, the last one is the closest thing left to the
+	// group the reader pointed at — and a great deal closer than appending a
+	// further duplicate header at the bottom of the block.
+	return headers[Math.min(occurrence, headers.length - 1)] ?? -1;
 }
 
 /** Position just after the section's last entry, so appends keep the group together. */
@@ -79,7 +104,7 @@ function sectionInsertIndex(
 ): number {
 	let lastEntry = headerIndex;
 	for (let i = headerIndex + 1; i < body.length; i++) {
-		const line = classifyLine(body[i]);
+		const line = classifyAt(body, i);
 		if (line.kind === "section") break;
 		if (line.kind === "entry") lastEntry = i;
 	}
@@ -89,7 +114,16 @@ function sectionInsertIndex(
 /** Index of the last line carrying content, ignoring trailing blank lines. */
 function lastContentIndex(body: readonly string[]): number {
 	for (let i = body.length - 1; i >= 0; i--) {
-		if (classifyLine(body[i]).kind !== "blank") return i;
+		if (classifyAt(body, i).kind !== "blank") return i;
 	}
 	return -1;
+}
+
+/**
+ * Classify the line at `index`. An index past the end classifies as blank,
+ * which is what every caller here wants: a line that is not there is neither
+ * content nor a section header.
+ */
+function classifyAt(body: readonly string[], index: number): ClassifiedLine {
+	return classifyLine(body[index] ?? "");
 }

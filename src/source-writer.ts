@@ -6,7 +6,7 @@ import {
 	MarkdownView,
 	TFile,
 } from "obsidian";
-import { ClipBookEntry } from "./types";
+import { ClipBookEntry, SectionRef } from "./types";
 import { buildEntryLine } from "./serializer";
 import {
 	insertEntryLine,
@@ -158,7 +158,7 @@ export async function undoDelete(
 
 export async function insertEntry(
 	target: SourceTarget,
-	section: string | null,
+	section: SectionRef,
 	key: string | null,
 	value: string,
 	masked: boolean
@@ -261,12 +261,15 @@ function locate(
 	}
 
 	const open = lines[lineStart];
+	const close = lines[lineEnd];
+	if (open === undefined || close === undefined) return "stale";
+
 	if (!OPEN_FENCE_RE.test(open)) {
 		// A fence that only matches once trimmed is nested in a callout or a
 		// list, where the source lines carry a prefix our indices do not model.
 		return OPEN_FENCE_RE.test(open.trim()) ? "unsupported-block" : "stale";
 	}
-	if (!CLOSE_FENCE_RE.test(lines[lineEnd])) return "stale";
+	if (!CLOSE_FENCE_RE.test(close)) return "stale";
 
 	const bodyStart = lineStart + 1;
 	const bodyEnd = lineEnd;

@@ -5,7 +5,7 @@ All notable changes to ClipBook will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2026-08-24
 
 ### Added
 
@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without an editor does not have.
 - An optional delay after which a copied masked value is cleared from the
   clipboard. Off by default; only ever clears the value ClipBook put there.
+- A test suite, a lint script, and a CI workflow that typechecks, lints, tests
+  and builds every push and pull request.
+- An add button on each section header, which opens the quick-add form already
+  knowing which section you meant, next to the section rather than at the
+  bottom of the block.
 
 ### Fixed
 
@@ -32,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A masked value no longer claims `aria-pressed`. Activating a revealed one
   edits rather than re-masks it, so describing it to a screen reader as a toggle
   was wrong.
+- Quick-add places a new keyless entry directly after the last keyless one,
+  rather than after the blank line that separated it from the first section.
+  Named sections already worked this way.
 - Fixed the block rendering as a stack of heavy grey boxes on mobile. Making the
   section headers and row controls real `<button>` elements in 0.2.0 exposed
   them to Obsidian's own button styling, which on mobile adds a fill, a border,
@@ -45,9 +53,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a long value crushing its key to an ellipsis while revealed or being
   edited. The key identifies the row, so it now keeps its width and the value
   takes what is left.
+- A block that repeats a section header — two `[AWS]` groups — now treats them
+  as the two groups they are. Adding from the second one's button added to the
+  first, and collapsing either collapsed both.
+- Fixed the add and delete buttons being invisible and untappable on a laptop
+  with a touchscreen. They hide until hovered, which is fine where there is a
+  pointer and impossible where you reach up to the screen; whether to hide them
+  now follows whether a touchscreen exists at all, while how big to draw them
+  still follows the pointer in use.
+- With reduced motion, collapsing a section no longer leaves its rows in the
+  tab order for a further 160ms — a delay that exists to cover an animation
+  that, under that setting, is not playing.
 
 ### Changed
 
+- Sections flow into columns when the block is wide enough for them — two from
+  around 800px, three from 1200px, one below that and on a phone. A block of
+  short groups used to leave half a desktop pane empty while every value sat an
+  inch from the key it belongs to; narrower columns put the two back together.
+  Groups are never split down the middle, and the column never narrows past the
+  point where a masked value would lose the last four characters that identify
+  it.
+- The quick-add form's section and key fields use the app's own input font.
+  Monospace stays on the value, where telling `l`, `1` and `I` apart matters.
 - Section headers read as quiet labels over a hairline rule rather than as
   filled bars, and values line up in one column against the copy button instead
   of trailing each key at a different offset. Keyless entries join that column
@@ -62,6 +90,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The quick-add form's own buttons are left unstyled so they render as
   Obsidian's native and accent buttons, and its inputs keep the app's sizing —
   which is what stops iOS zooming in when one is focused.
+- The Obsidian typings are pinned to the `minAppVersion` floor, so using an API
+  newer than the plugin claims to support is now a compile error rather than
+  something to remember to check.
+- Collapsing and expanding a section animates rather than snapping, and the
+  chevron turns rather than being swapped for a different icon. Collapsed rows
+  leave the tab order, which `display: none` also did and a plain height
+  animation would not.
+- Section headers dropped the rule beneath them. The uppercase label and the gap
+  above already mark where a group starts; a line every few rows competed with
+  the entries.
+- The **+ Add** button fades in when the block is hovered or focused, rather
+  than sitting under every block permanently. It stays put where there is no
+  pointer to hover with, and while its form is open.
+- Each entry is one tab stop rather than four. A row is a toolbar: Tab moves
+  between rows, the arrow keys move between a row's key, value, copy and delete,
+  and Home and End jump to its ends. A block of fifteen entries cost sixty
+  presses to tab past before.
 
 ## [0.2.0] - 2026-08-21
 
@@ -163,6 +208,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comment support with `#` and `;` prefixes
 - Orphan entries (key-value pairs before first `[Section]`) render without group header
 
+[0.2.1]: https://github.com/zkbkb/obsidian-ClipBook/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/zkbkb/obsidian-ClipBook/compare/0.1.1...0.2.0
 [0.1.1]: https://github.com/zkbkb/obsidian-ClipBook/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/zkbkb/obsidian-ClipBook/releases/tag/0.1.0

@@ -13,6 +13,7 @@ import { RenderContext } from "./context";
 import { renderCopyButton } from "./copy";
 import { caretIndexFromPoint, startInlineEdit } from "./inline-edit";
 import { MaskedValue } from "./masked-value";
+import { makeRowRoving, registerRowControl } from "./roving-focus";
 
 export function renderEntry(
 	rc: RenderContext,
@@ -31,6 +32,14 @@ export function renderEntry(
 		entry.masked || rc.settings.defaultMasked
 	);
 	renderDeleteButton(rc, entry, rowEl);
+
+	// One tab stop for the row, arrow keys within it.
+	for (const [i, control] of Array.from(
+		rowEl.querySelectorAll<HTMLElement>("[data-clipbook-control]")
+	).entries()) {
+		registerRowControl(control, i === 0);
+	}
+	makeRowRoving(rowEl, entry.key ?? "Entry");
 }
 
 function renderKey(
@@ -46,7 +55,7 @@ function renderKey(
 		text: key,
 		attr: {
 			role: "button",
-			tabindex: "0",
+			"data-clipbook-control": "",
 			"aria-label": `Edit key ${key}`,
 		},
 	});
@@ -92,7 +101,7 @@ function renderValue(
 ): void {
 	const valueEl = rowEl.createSpan({
 		cls: `clipbook-value${entry.key === null ? " clipbook-value-full" : ""}`,
-		attr: { role: "button", tabindex: "0" },
+		attr: { role: "button", "data-clipbook-control": "" },
 	});
 
 	// A keyless entry cannot hold an empty value — `= ` on its own carries no
@@ -191,6 +200,7 @@ function renderDeleteButton(
 		cls: "clipbook-btn clipbook-icon-btn clipbook-delete-btn",
 		attr: {
 			type: "button",
+			"data-clipbook-control": "",
 			"aria-label":
 				entry.key !== null ? `Delete ${entry.key}` : "Delete entry",
 		},
