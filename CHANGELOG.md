@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Sections flow into columns when the block is wide enough for them — two from
+  around 800px, three from 1200px, one below that and on a phone. A block of
+  short groups used to leave half a desktop pane empty while every value sat an
+  inch from the key it belongs to; narrower columns put the two back together.
+  Groups are never split down the middle, and the column never narrows past the
+  point where a masked value would lose the last four characters that identify
+  it.
+- The quick-add form's section and key fields use the app's own input font.
+  Monospace stays on the value, where telling `l`, `1` and `I` apart matters.
 - Section headers read as quiet labels over a hairline rule rather than as
   filled bars, and values line up in one column against the copy button instead
   of trailing each key at a different offset. Keyless entries join that column

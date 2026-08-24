@@ -62,8 +62,10 @@ function renderSection(
 ): void {
 	const sectionEl = rc.containerEl.createDiv({ cls: "clipbook-section" });
 
-	// Orphan entries: no header, not collapsible.
+	// Orphan entries: no header, and nothing to collapse them by. Still marked,
+	// so a theme or a snippet can tell an unnamed group from a named one.
 	if (section.name === null) {
+		sectionEl.addClass("clipbook-section-orphan");
 		for (const entry of section.entries) renderEntry(rc, entry, sectionEl);
 		return;
 	}

@@ -1,7 +1,39 @@
 /* ClipBook – Code Block Renderer Styles */
 
+/*
+ * Sections flow into as many columns as the block is wide enough to hold.
+ *
+ * A credentials block is mostly short groups, so on a desktop width half of it
+ * was empty and every value sat an inch from the key it belongs to. Columns
+ * spend that width on the rows instead: two narrower columns put each value
+ * back beside its own key.
+ *
+ * The section is the unit, not the entry. Splitting entries across columns
+ * would put the copy buttons at two different places on the page, and scanning
+ * a list of key names is exactly the thing that wants one straight line to
+ * follow.
+ *
+ * 24rem is a floor, not a preference: below about that, a masked value starts
+ * losing its last four characters to the ellipsis — and those four are the
+ * whole of what tells two masked keys apart. A narrower column would buy
+ * density by making the values useless.
+ */
 .clipbook-container {
 	padding: 4px 0;
+	columns: 24rem auto;
+	column-gap: 28px;
+}
+
+/* A group is never split down the middle. */
+.clipbook-section {
+	break-inside: avoid;
+}
+
+/* The block's own chrome sits under all of it, not inside a column. */
+.clipbook-container > .clipbook-add-btn,
+.clipbook-container > .clipbook-add-form,
+.clipbook-empty {
+	column-span: all;
 }
 
 .clipbook-empty {
@@ -351,6 +383,13 @@
 .clipbook-add-form input.clipbook-add-form-input {
 	flex: 1 1 auto;
 	min-width: 0;
+}
+
+/* Monospace where it earns its keep: a secret is read character by character,
+   and `l1I` needs to be three different shapes. A section or key name is read
+   as a word, so it takes the app's own input font like every other field in
+   Obsidian. */
+.clipbook-add-form input.clipbook-add-form-value {
 	font-family: var(--font-monospace);
 }
 

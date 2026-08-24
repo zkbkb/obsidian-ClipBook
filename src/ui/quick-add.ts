@@ -121,6 +121,7 @@ function renderQuickAddForm(
 	const valueInput = addField(formEl, "Value", {
 		placeholder: "Paste or type value",
 	});
+	valueInput.addClass("clipbook-add-form-value");
 
 	// Mask toggle
 	const maskRow = formEl.createDiv({ cls: "clipbook-add-form-row" });
