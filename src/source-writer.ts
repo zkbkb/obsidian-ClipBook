@@ -13,6 +13,7 @@ import {
 	removeEntryLine,
 	replaceEntryLine,
 } from "./block-edit";
+import { CLOSE_FENCE_RE, OPEN_FENCE_RE } from "./fence";
 
 /**
  * Writing back into the markdown source.
@@ -56,10 +57,6 @@ export function describeWriteFailure(failure: WriteFailure): string {
 	}
 }
 
-/** Opening fence, at the start of a line — a `>` or indent prefix means we cannot map lines 1:1. */
-const OPEN_FENCE_RE = /^(?:`{3,}|~{3,})\s*clipbook(?:\s.*)?$/;
-const CLOSE_FENCE_RE = /^(?:`{3,}|~{3,})\s*$/;
-
 /** A transform over the block body; returning null aborts the write. */
 type BodyTransform = (body: readonly string[]) => string[] | null;
 
@@ -76,22 +73,87 @@ export async function replaceEntry(
 	newValue: string
 ): Promise<WriteFailure | null> {
 	const newLine = buildEntryLine(newKey, newValue, entry.masked);
-	return editBlockBody(
+	const result = await editBlockBody(
 		target,
 		(body) => replaceEntryLine(body, entry.sourceLine, newLine),
 		{ index: entry.sourceLine, raw: entry.raw }
 	);
+	return result.failure;
 }
+
+/**
+ * What is needed to put a deleted entry back. Deliberately a file path and an
+ * absolute line rather than a block reference: by the time anyone acts on it
+ * the block has re-rendered, and the element the write path resolves against
+ * is gone.
+ */
+export interface DeletedEntry {
+	path: string;
+	line: number;
+	raw: string;
+}
+
+export type DeleteResult =
+	| { failure: WriteFailure; undo: null }
+	| { failure: null; undo: DeletedEntry };
 
 export async function deleteEntry(
 	target: SourceTarget,
 	entry: ClipBookEntry
-): Promise<WriteFailure | null> {
-	return editBlockBody(
+): Promise<DeleteResult> {
+	const result = await editBlockBody(
 		target,
 		(body) => removeEntryLine(body, entry.sourceLine),
 		{ index: entry.sourceLine, raw: entry.raw }
 	);
+	if (result.failure !== null) return { failure: result.failure, undo: null };
+
+	return {
+		failure: null,
+		undo: {
+			path: target.ctx.sourcePath,
+			line: result.bodyStart + entry.sourceLine,
+			raw: entry.raw,
+		},
+	};
+}
+
+/** Put back what {@link deleteEntry} removed. */
+export async function undoDelete(
+	app: App,
+	deleted: DeletedEntry
+): Promise<WriteFailure | null> {
+	const file = app.vault.getAbstractFileByPath(deleted.path);
+	if (!(file instanceof TFile)) return "no-file";
+
+	const editor = findEditorForPath(app, deleted.path);
+	if (editor) {
+		if (deleted.line > editor.lineCount()) return "stale";
+		editor.replaceRange(
+			deleted.raw + "\n",
+			{ line: deleted.line, ch: 0 },
+			{ line: deleted.line, ch: 0 }
+		);
+		return null;
+	}
+
+	let failure: WriteFailure | null = null;
+	try {
+		await app.vault.process(file, (data) => {
+			const eol = data.includes("\r\n") ? "\r\n" : "\n";
+			const lines = data.split(/\r?\n/);
+			if (deleted.line > lines.length) {
+				failure = "stale";
+				return data;
+			}
+			lines.splice(deleted.line, 0, deleted.raw);
+			return lines.join(eol);
+		});
+	} catch (error) {
+		console.error("ClipBook: failed to restore entry", error);
+		return "error";
+	}
+	return failure;
 }
 
 export async function insertEntry(
@@ -102,25 +164,31 @@ export async function insertEntry(
 	masked: boolean
 ): Promise<WriteFailure | null> {
 	const entryLine = buildEntryLine(key, value, masked);
-	return editBlockBody(target, (body) =>
+	const result = await editBlockBody(target, (body) =>
 		insertEntryLine(body, section, entryLine)
 	);
+	return result.failure;
 }
+
+/** Where a successful edit landed, or why it did not happen. */
+type EditResult =
+	| { failure: WriteFailure }
+	| { failure: null; bodyStart: number };
 
 async function editBlockBody(
 	target: SourceTarget,
 	transform: BodyTransform,
 	expect?: Expectation
-): Promise<WriteFailure | null> {
+): Promise<EditResult> {
 	const { app, ctx, containerEl } = target;
 
 	const info = ctx.getSectionInfo(containerEl);
-	if (!info) return "no-location";
+	if (!info) return { failure: "no-location" };
 
 	// `getAbstractFileByPath` rather than `getFileByPath`, which needs Obsidian
 	// 1.5.7 — everything else here works on the manifest's minimum version.
 	const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
-	if (!(file instanceof TFile)) return "no-file";
+	if (!(file instanceof TFile)) return { failure: "no-file" };
 
 	// Prefer an open editor for this exact file: it keeps unsaved changes and
 	// the undo history intact. Fall back to an atomic vault write otherwise
@@ -135,16 +203,17 @@ async function editBlockBody(
 			transform,
 			expect
 		);
-		if (typeof located === "string") return located;
+		if (typeof located === "string") return { failure: located };
 		editor.replaceRange(
 			joinBody(located.newBody, "\n"),
 			{ line: located.bodyStart, ch: 0 },
 			{ line: located.bodyEnd, ch: 0 }
 		);
-		return null;
+		return { failure: null, bodyStart: located.bodyStart };
 	}
 
 	let failure: WriteFailure | null = null;
+	let bodyStart = 0;
 	try {
 		await app.vault.process(file, (data) => {
 			const eol = data.includes("\r\n") ? "\r\n" : "\n";
@@ -154,6 +223,7 @@ async function editBlockBody(
 				failure = located;
 				return data;
 			}
+			bodyStart = located.bodyStart;
 			lines.splice(
 				located.bodyStart,
 				located.bodyEnd - located.bodyStart,
@@ -163,9 +233,9 @@ async function editBlockBody(
 		});
 	} catch (error) {
 		console.error("ClipBook: failed to write block", error);
-		return "error";
+		return { failure: "error" };
 	}
-	return failure;
+	return failure !== null ? { failure } : { failure: null, bodyStart };
 }
 
 interface LocatedBody {

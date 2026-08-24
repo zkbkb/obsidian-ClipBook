@@ -16,7 +16,7 @@ export function renderQuickAddButton(
 	data: ClipBookData
 ): void {
 	const addBtn = rc.containerEl.createEl("button", {
-		cls: "clipbook-add-btn",
+		cls: "clipbook-btn clipbook-add-btn",
 		attr: { type: "button", "aria-expanded": "false" },
 	});
 	const iconEl = addBtn.createSpan({ cls: "clipbook-add-btn-icon" });
@@ -80,15 +80,16 @@ function renderQuickAddForm(
 	maskLabel.createSpan({ text: " Mask this value" });
 
 	const actionsRow = formEl.createDiv({ cls: "clipbook-add-form-actions" });
+	// Plain Obsidian buttons: unlike the controls inside a row, these should
+	// look like the app's own buttons, so they are left unstyled.
 	const cancelBtn = actionsRow.createEl("button", {
-		cls: "clipbook-add-form-cancel",
 		text: "Cancel",
 		attr: { type: "button" },
 	});
 	cancelBtn.addEventListener("click", onClose);
 
 	const submitBtn = actionsRow.createEl("button", {
-		cls: "clipbook-add-form-submit",
+		cls: "mod-cta",
 		text: "Add",
 		attr: { type: "submit" },
 	});

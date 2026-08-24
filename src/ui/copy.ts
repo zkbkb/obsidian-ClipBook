@@ -12,10 +12,13 @@ export function renderCopyButton(
 	rc: RenderContext,
 	parentEl: HTMLElement,
 	ariaLabel: string,
-	getValue: () => string
+	getValue: () => string,
+	/** Whether the note marks this value as a secret, which is what the
+	 *  clipboard-clearing delay applies to. */
+	isSecret: boolean
 ): HTMLButtonElement {
 	const buttonEl = parentEl.createEl("button", {
-		cls: "clipbook-icon-btn clipbook-copy-btn",
+		cls: "clipbook-btn clipbook-icon-btn clipbook-copy-btn",
 		attr: { type: "button", "aria-label": ariaLabel },
 	});
 	setIcon(buttonEl, "copy");
@@ -31,7 +34,10 @@ export function renderCopyButton(
 
 	const copyValue = async (): Promise<void> => {
 		try {
-			await navigator.clipboard.writeText(getValue());
+			await rc.clipboard.copy(
+				getValue(),
+				isSecret ? rc.settings.clipboardClearTimeout : 0
+			);
 		} catch (error: unknown) {
 			console.error("ClipBook: copy failed", error);
 			new Notice("Failed to copy to clipboard.");

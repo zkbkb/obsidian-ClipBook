@@ -5,6 +5,64 @@ All notable changes to ClipBook will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **ClipBook: Copy value…** — a command that fuzzy-finds any entry across the
+  vault and copies it without opening the note it lives in. Notes with no code
+  block are skipped without being read, and the picker shows a masked value
+  rather than the secret itself.
+- **ClipBook: Hide all revealed values** — one command to re-mask everything,
+  bindable to a hotkey. Escape hides a single revealed value.
+- Deleting an entry now offers an Undo for ten seconds. It restores the line
+  itself rather than relying on the editor's undo stack, which a block rendered
+  without an editor does not have.
+- An optional delay after which a copied masked value is cleared from the
+  clipboard. Off by default; only ever clears the value ClipBook put there.
+
+### Fixed
+
+- Collapsed sections no longer spring open whenever anything is edited. Collapse
+  state was local to a render, and every write re-renders the block; it is now
+  remembered for the session, without being written to the note.
+- A revealed value could not be hidden again. Every way of activating one led to
+  editing it, so it stayed on screen until the auto-hide timer or a tab switch
+  took it away.
+- A masked value no longer claims `aria-pressed`. Activating a revealed one
+  edits rather than re-masks it, so describing it to a screen reader as a toggle
+  was wrong.
+- Fixed the block rendering as a stack of heavy grey boxes on mobile. Making the
+  section headers and row controls real `<button>` elements in 0.2.0 exposed
+  them to Obsidian's own button styling, which on mobile adds a fill, a border,
+  a shadow, inflated padding, and centred content. Those rules are written as
+  `.is-mobile button`, so the plugin's single-class rules lost to them; the
+  reset now covers every property the app sets, at a specificity that wins.
+- Fixed a revealed value still being cut off by the ellipsis meant for masked
+  rows. Any secret longer than the row was unreadable however many times you
+  tapped it — most of them, on a phone. A revealed value now wraps and takes
+  the space it needs.
+- Fixed a long value crushing its key to an ellipsis while revealed or being
+  edited. The key identifies the row, so it now keeps its width and the value
+  takes what is left.
+
+### Changed
+
+- Section headers read as quiet labels over a hairline rule rather than as
+  filled bars, and values line up in one column against the copy button instead
+  of trailing each key at a different offset. Keyless entries join that column
+  too, so a mixed block reads as one list.
+- Touch targets grow to 36–38px on coarse pointers without the controls
+  themselves growing, and the quick-add form stacks its labels above its fields
+  the way the app's own mobile settings do.
+- Copy and delete are no longer visually equal. Delete stays out of the way
+  until the row is hovered or focused where there is a pointer to do it with,
+  and rests faint but always tappable on a touch screen — revealing it on press
+  cannot work, because the press has already gone through it to the row.
+- The quick-add form's own buttons are left unstyled so they render as
+  Obsidian's native and accent buttons, and its inputs keep the app's sizing —
+  which is what stops iOS zooming in when one is focused.
+
 ## [0.2.0] - 2026-08-21
 
 ### Fixed

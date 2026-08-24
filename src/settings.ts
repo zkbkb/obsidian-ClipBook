@@ -9,6 +9,7 @@ export type ClipBookSettings = {
 	hideOnTabSwitch: boolean;     // re-mask on blur/tab switch
 	defaultCollapsed: boolean;    // sections start collapsed
 	quickAddDefaultMask: boolean; // mask checkbox default in quick-add
+	clipboardClearTimeout: number; // seconds before a copied secret is cleared, 0 = never
 };
 
 export const DEFAULT_SETTINGS: ClipBookSettings = {
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: ClipBookSettings = {
 	hideOnTabSwitch: true,
 	defaultCollapsed: false,
 	quickAddDefaultMask: true,
+	clipboardClearTimeout: 0,
 };
 
 /**
@@ -43,33 +45,56 @@ export function normalizeSettings(saved: unknown): ClipBookSettings {
 	return settings;
 }
 
+/** A pair of settings: an on/off toggle and the delay it enables. */
+interface DurationField {
+	inputEl: HTMLInputElement;
+	read: () => number;
+	write: (seconds: number) => void;
+	fallback: number;
+}
+
+interface DurationOptions {
+	name: string;
+	desc: string;
+	delayName: string;
+	delayDesc: string;
+	read: () => number;
+	write: (seconds: number) => void;
+	fallback: number;
+}
+
 export class ClipBookSettingTab extends PluginSettingTab {
 	plugin: ClipBookPlugin;
-	private delayInputEl: HTMLInputElement | null = null;
+	private durationFields: DurationField[] = [];
 
 	constructor(app: App, plugin: ClipBookPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
+	/** A delay left empty or nonsensical on the way out falls back to its default. */
 	hide(): void {
-		if (!this.delayInputEl) return;
-		// If auto-hide is disabled, nothing to validate
-		if (this.plugin.settings.autoHideTimeout === 0) return;
-		// If delay input is empty/invalid on exit, reset to default 5s
-		const num = parseInt(this.delayInputEl.value, 10);
-		if (isNaN(num) || num < 1) {
-			this.plugin.settings.autoHideTimeout = DEFAULT_SETTINGS.autoHideTimeout;
-			this.plugin.saveSettings().catch((error) => {
-				console.error("ClipBook: Failed to save settings.", error);
-				new Notice("Failed to save settings.");
-			});
+		let repaired = false;
+		for (const field of this.durationFields) {
+			// Zero means the feature is off; there is no delay to validate.
+			if (field.read() === 0) continue;
+			const seconds = parseInt(field.inputEl.value, 10);
+			if (Number.isFinite(seconds) && seconds >= 1) continue;
+			field.write(field.fallback);
+			repaired = true;
 		}
+		if (!repaired) return;
+
+		this.plugin.saveSettings().catch((error) => {
+			console.error("ClipBook: Failed to save settings.", error);
+			new Notice("Failed to save settings.");
+		});
 	}
 
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+		this.durationFields = [];
 
 		new Setting(containerEl)
 			.setName("Mask all values by default")
@@ -85,47 +110,17 @@ export class ClipBookSettingTab extends PluginSettingTab {
 					})
 			);
 
-		const autoHideEnabled = this.plugin.settings.autoHideTimeout > 0;
-		// Remember last non-zero delay so toggling off/on doesn't lose it
-		let lastDelay = autoHideEnabled
-			? this.plugin.settings.autoHideTimeout
-			: DEFAULT_SETTINGS.autoHideTimeout;
-
-		new Setting(containerEl)
-			.setName("Auto-hide revealed values")
-			.setDesc(
-				"Automatically re-mask revealed values after a delay."
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(autoHideEnabled)
-					.onChange(async (value) => {
-						this.plugin.settings.autoHideTimeout = value
-							? lastDelay
-							: 0;
-						await this.plugin.saveSettings();
-						delaySetting.settingEl.toggle(value);
-					})
-			);
-
-		const delaySetting = new Setting(containerEl)
-			.setName("Auto-hide delay (s)")
-			.setDesc("Seconds before a revealed value is re-masked.")
-			.addText((text) => {
-				this.delayInputEl = text.inputEl;
-				text
-					.setPlaceholder("5")
-					.setValue(String(lastDelay))
-					.onChange(async (raw) => {
-						const num = parseInt(raw, 10);
-						if (isNaN(num) || num < 1) return;
-						lastDelay = num;
-						this.plugin.settings.autoHideTimeout = num;
-						await this.plugin.saveSettings();
-					});
-			});
-
-		delaySetting.settingEl.toggle(autoHideEnabled);
+		this.addDurationSetting(containerEl, {
+			name: "Auto-hide revealed values",
+			desc: "Automatically re-mask revealed values after a delay.",
+			delayName: "Auto-hide delay (s)",
+			delayDesc: "Seconds before a revealed value is re-masked.",
+			read: () => this.plugin.settings.autoHideTimeout,
+			write: (seconds) => {
+				this.plugin.settings.autoHideTimeout = seconds;
+			},
+			fallback: DEFAULT_SETTINGS.autoHideTimeout,
+		});
 
 		new Setting(containerEl)
 			.setName("Hide on tab switch")
@@ -140,6 +135,22 @@ export class ClipBookSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		this.addDurationSetting(containerEl, {
+			name: "Clear the clipboard after copying",
+			desc:
+				"Empty the clipboard a while after a masked value is copied, so a " +
+				"secret does not sit there for the rest of the day. Only ever " +
+				"clears the value ClipBook put there, and only where the platform " +
+				"allows reading the clipboard back.",
+			delayName: "Clear the clipboard after (s)",
+			delayDesc: "Seconds before a copied masked value is cleared.",
+			read: () => this.plugin.settings.clipboardClearTimeout,
+			write: (seconds) => {
+				this.plugin.settings.clipboardClearTimeout = seconds;
+			},
+			fallback: 45,
+		});
 
 		new Setting(containerEl)
 			.setName("Sections start collapsed")
@@ -166,5 +177,53 @@ export class ClipBookSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+	}
+
+	/**
+	 * A toggle plus the delay it controls, stored as one number where zero means
+	 * off. The delay row hides with the toggle, and the last non-zero value is
+	 * remembered so switching off and on again does not lose it.
+	 */
+	private addDurationSetting(
+		containerEl: HTMLElement,
+		options: DurationOptions
+	): void {
+		const enabled = options.read() > 0;
+		let lastDelay = enabled ? options.read() : options.fallback;
+
+		new Setting(containerEl)
+			.setName(options.name)
+			.setDesc(options.desc)
+			.addToggle((toggle) =>
+				toggle.setValue(enabled).onChange(async (value) => {
+					options.write(value ? lastDelay : 0);
+					await this.plugin.saveSettings();
+					delaySetting.settingEl.toggle(value);
+				})
+			);
+
+		const delaySetting = new Setting(containerEl)
+			.setName(options.delayName)
+			.setDesc(options.delayDesc)
+			.addText((text) => {
+				this.durationFields.push({
+					inputEl: text.inputEl,
+					read: options.read,
+					write: options.write,
+					fallback: options.fallback,
+				});
+				text
+					.setPlaceholder(String(options.fallback))
+					.setValue(String(lastDelay))
+					.onChange(async (raw) => {
+						const seconds = parseInt(raw, 10);
+						if (!Number.isFinite(seconds) || seconds < 1) return;
+						lastDelay = seconds;
+						options.write(seconds);
+						await this.plugin.saveSettings();
+					});
+			});
+
+		delaySetting.settingEl.toggle(enabled);
 	}
 }

@@ -49,18 +49,26 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 		return;
 	}
 
+	const name = section.name;
 	const headerEl = sectionEl.createEl("button", {
-		cls: "clipbook-section-header",
+		cls: "clipbook-btn clipbook-section-header",
 		attr: { type: "button" },
 	});
+	// One chevron, rotated by CSS off `aria-expanded`, rather than two icons
+	// swapped on toggle: the state has a single source of truth, and the turn
+	// can be animated.
 	const chevronEl = headerEl.createSpan({ cls: "clipbook-chevron" });
-	headerEl.createSpan({ text: section.name });
+	setIcon(chevronEl, "chevron-right");
+	headerEl.createSpan({ text: name });
 
 	const entriesEl = sectionEl.createDiv({ cls: "clipbook-entries" });
 
-	let collapsed = rc.settings.defaultCollapsed;
+	let collapsed = rc.collapse.get(
+		rc.ctx.sourcePath,
+		name,
+		rc.settings.defaultCollapsed
+	);
 	const paint = () => {
-		setIcon(chevronEl, collapsed ? "chevron-right" : "chevron-down");
 		entriesEl.toggleClass("clipbook-collapsed", collapsed);
 		headerEl.setAttribute("aria-expanded", String(!collapsed));
 	};
@@ -68,6 +76,10 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 
 	headerEl.addEventListener("click", () => {
 		collapsed = !collapsed;
+		// Remembered outside the render: editing any entry rewrites the source
+		// and re-renders the whole block, which would otherwise spring every
+		// collapsed section back open.
+		rc.collapse.set(rc.ctx.sourcePath, name, collapsed);
 		paint();
 	});
 
