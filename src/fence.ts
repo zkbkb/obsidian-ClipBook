@@ -21,7 +21,8 @@ export function findClipBookBlocks(lines: readonly string[]): BlockBounds[] {
 	const blocks: BlockBounds[] = [];
 
 	for (let i = 0; i < lines.length; i++) {
-		if (!OPEN_FENCE_RE.test(lines[i])) continue;
+		const line = lines[i];
+		if (line === undefined || !OPEN_FENCE_RE.test(line)) continue;
 
 		const close = findClosingFence(lines, i + 1);
 		// An unterminated block has no body we can trust; nothing after it can
@@ -37,7 +38,8 @@ export function findClipBookBlocks(lines: readonly string[]): BlockBounds[] {
 
 function findClosingFence(lines: readonly string[], from: number): number {
 	for (let i = from; i < lines.length; i++) {
-		if (CLOSE_FENCE_RE.test(lines[i])) return i;
+		const line = lines[i];
+		if (line !== undefined && CLOSE_FENCE_RE.test(line)) return i;
 	}
 	return -1;
 }

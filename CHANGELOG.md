@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without an editor does not have.
 - An optional delay after which a copied masked value is cleared from the
   clipboard. Off by default; only ever clears the value ClipBook put there.
+- A test suite, a lint script, and a CI workflow that typechecks, lints, tests
+  and builds every push and pull request.
 
 ### Fixed
 
@@ -32,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A masked value no longer claims `aria-pressed`. Activating a revealed one
   edits rather than re-masks it, so describing it to a screen reader as a toggle
   was wrong.
+- Quick-add places a new keyless entry directly after the last keyless one,
+  rather than after the blank line that separated it from the first section.
+  Named sections already worked this way.
 - Fixed the block rendering as a stack of heavy grey boxes on mobile. Making the
   section headers and row controls real `<button>` elements in 0.2.0 exposed
   them to Obsidian's own button styling, which on mobile adds a fill, a border,
@@ -62,6 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The quick-add form's own buttons are left unstyled so they render as
   Obsidian's native and accent buttons, and its inputs keep the app's sizing —
   which is what stops iOS zooming in when one is focused.
+- The Obsidian typings are pinned to the `minAppVersion` floor, so using an API
+  newer than the plugin claims to support is now a compile error rather than
+  something to remember to check.
 
 ## [0.2.0] - 2026-08-21
 
