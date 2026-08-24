@@ -53,6 +53,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a long value crushing its key to an ellipsis while revealed or being
   edited. The key identifies the row, so it now keeps its width and the value
   takes what is left.
+- A block that repeats a section header — two `[AWS]` groups — now treats them
+  as the two groups they are. Adding from the second one's button added to the
+  first, and collapsing either collapsed both.
+- Fixed the add and delete buttons being invisible and untappable on a laptop
+  with a touchscreen. They hide until hovered, which is fine where there is a
+  pointer and impossible where you reach up to the screen; whether to hide them
+  now follows whether a touchscreen exists at all, while how big to draw them
+  still follows the pointer in use.
+- With reduced motion, collapsing a section no longer leaves its rows in the
+  tab order for a further 160ms — a delay that exists to cover an animation
+  that, under that setting, is not playing.
 
 ### Changed
 

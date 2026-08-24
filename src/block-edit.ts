@@ -1,5 +1,6 @@
 import { ClassifiedLine, classifyLine } from "./parser";
 import { buildSectionLine } from "./serializer";
+import { SectionRef } from "./types";
 
 /**
  * Pure transforms over the *body* of a clipbook block — the lines strictly
@@ -28,22 +29,22 @@ export function removeEntryLine(
 }
 
 /**
- * Insert an entry into `sectionName`, creating the section if it does not exist.
- * A null section means the orphan group that precedes the first `[Section]`.
+ * Insert an entry into `section`, creating the section if it does not exist.
+ * A null name means the orphan group that precedes the first `[Section]`.
  */
 export function insertEntryLine(
 	body: readonly string[],
-	sectionName: string | null,
+	section: SectionRef,
 	entryLine: string
 ): string[] {
 	const next = body.slice();
 
-	if (sectionName === null) {
+	if (section.name === null) {
 		next.splice(orphanInsertIndex(next), 0, entryLine);
 		return next;
 	}
 
-	const headerIndex = findSectionHeader(next, sectionName);
+	const headerIndex = findSectionHeader(next, section.name, section.occurrence);
 	if (headerIndex !== -1) {
 		next.splice(sectionInsertIndex(next, headerIndex), 0, entryLine);
 		return next;
@@ -52,7 +53,7 @@ export function insertEntryLine(
 	// New section, appended after the existing content.
 	const end = lastContentIndex(next) + 1;
 	const separator = end > 0 ? [""] : [];
-	next.splice(end, 0, ...separator, buildSectionLine(sectionName), entryLine);
+	next.splice(end, 0, ...separator, buildSectionLine(section.name), entryLine);
 	return next;
 }
 
@@ -78,12 +79,22 @@ function orphanInsertIndex(body: readonly string[]): number {
 	return firstSection !== -1 ? firstSection : lastContentIndex(body) + 1;
 }
 
-function findSectionHeader(body: readonly string[], name: string): number {
+function findSectionHeader(
+	body: readonly string[],
+	name: string,
+	occurrence: number
+): number {
+	const headers: number[] = [];
 	for (let i = 0; i < body.length; i++) {
 		const line = classifyAt(body, i);
-		if (line.kind === "section" && line.name === name) return i;
+		if (line.kind === "section" && line.name === name) headers.push(i);
 	}
-	return -1;
+	if (headers.length === 0) return -1;
+	// Clamped rather than missed. If the note lost a group of this name between
+	// the render and the write, the last one is the closest thing left to the
+	// group the reader pointed at — and a great deal closer than appending a
+	// further duplicate header at the bottom of the block.
+	return headers[Math.min(occurrence, headers.length - 1)] ?? -1;
 }
 
 /** Position just after the section's last entry, so appends keep the group together. */

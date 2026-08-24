@@ -1,5 +1,5 @@
 import { Notice, setIcon } from "obsidian";
-import { ClipBookData } from "../types";
+import { ClipBookData, SectionRef } from "../types";
 import {
 	describeKeyProblem,
 	describeSectionProblem,
@@ -32,7 +32,7 @@ export class QuickAdd {
 	toggle(
 		opener: HTMLElement,
 		host: HTMLElement,
-		presetSection: string | null
+		presetSection: SectionRef | null
 	): void {
 		const reopening = this.opener === opener && this.formEl !== null;
 		this.close();
@@ -71,7 +71,7 @@ export function renderQuickAddButton(rc: RenderContext, quickAdd: QuickAdd): voi
 /** The per-section button, which does not. */
 export function renderSectionAddButton(
 	hostEl: HTMLElement,
-	sectionName: string,
+	section: SectionRef & { name: string },
 	quickAdd: QuickAdd,
 	formHostEl: HTMLElement
 ): void {
@@ -80,14 +80,14 @@ export function renderSectionAddButton(
 		attr: {
 			type: "button",
 			"aria-expanded": "false",
-			"aria-label": `Add to ${sectionName}`,
+			"aria-label": `Add to ${section.name}`,
 		},
 	});
 	setIcon(addBtn, "plus");
 
 	addBtn.addEventListener("click", (evt) => {
 		evt.stopPropagation();
-		quickAdd.toggle(addBtn, formHostEl, sectionName);
+		quickAdd.toggle(addBtn, formHostEl, section);
 	});
 }
 
@@ -95,7 +95,7 @@ function renderQuickAddForm(
 	rc: RenderContext,
 	data: ClipBookData,
 	hostEl: HTMLElement,
-	presetSection: string | null,
+	presetSection: SectionRef | null,
 	onClose: () => void
 ): HTMLElement {
 	const formEl = hostEl.createEl("form", { cls: "clipbook-add-form" });
@@ -105,7 +105,7 @@ function renderQuickAddForm(
 		placeholder: "(none — add as orphan)",
 		list: listId,
 	});
-	if (presetSection !== null) sectionInput.value = presetSection;
+	if (presetSection?.name != null) sectionInput.value = presetSection.name;
 
 	const existingSections = data
 		.map((s) => s.name)
@@ -190,7 +190,16 @@ function renderQuickAddForm(
 		try {
 			const failure = await insertEntry(
 				rc,
-				section || null,
+				{
+					name: section || null,
+					// The preset points at one particular group; a name typed
+					// or picked from the list means the first of that name,
+					// which is all a name on its own can mean.
+					occurrence:
+						presetSection !== null && section === presetSection.name
+							? presetSection.occurrence
+							: 0,
+				},
 				key || null,
 				value,
 				maskCheckbox.checked

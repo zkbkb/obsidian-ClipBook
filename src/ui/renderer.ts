@@ -38,7 +38,15 @@ export function renderClipBook(
 			text: "Empty clipbook block",
 		});
 	} else {
-		for (const section of data) renderSection(rc, section, quickAdd);
+		// Two `[AWS]` headers are two groups, and every group needs to know
+		// which one it is: the name alone would send both add buttons to the
+		// first group and give both headers one shared collapse state.
+		const seen = new Map<string, number>();
+		for (const section of data) {
+			const occurrence = section.name === null ? 0 : (seen.get(section.name) ?? 0);
+			if (section.name !== null) seen.set(section.name, occurrence + 1);
+			renderSection(rc, section, occurrence, quickAdd);
+		}
 	}
 
 	// Rendered unconditionally — an empty block is exactly where quick-add is
@@ -49,6 +57,7 @@ export function renderClipBook(
 function renderSection(
 	rc: RenderContext,
 	section: ClipBookSection,
+	occurrence: number,
 	quickAdd: QuickAdd
 ): void {
 	const sectionEl = rc.containerEl.createDiv({ cls: "clipbook-section" });
@@ -74,7 +83,7 @@ function renderSection(
 
 	// Two elements, not one: collapsing animates the outer element's grid row
 	// from `1fr` to `0fr`, which needs a single child to measure against.
-	renderSectionAddButton(headRowEl, name, quickAdd, sectionEl);
+	renderSectionAddButton(headRowEl, { name, occurrence }, quickAdd, sectionEl);
 
 	const entriesEl = sectionEl.createDiv({ cls: "clipbook-entries" });
 	const innerEl = entriesEl.createDiv({ cls: "clipbook-entries-inner" });
@@ -82,6 +91,7 @@ function renderSection(
 	let collapsed = rc.collapse.get(
 		rc.ctx.sourcePath,
 		name,
+		occurrence,
 		rc.settings.defaultCollapsed
 	);
 	const paint = () => {
@@ -95,7 +105,7 @@ function renderSection(
 		// Remembered outside the render: editing any entry rewrites the source
 		// and re-renders the whole block, which would otherwise spring every
 		// collapsed section back open.
-		rc.collapse.set(rc.ctx.sourcePath, name, collapsed);
+		rc.collapse.set(rc.ctx.sourcePath, name, occurrence, collapsed);
 		paint();
 	});
 

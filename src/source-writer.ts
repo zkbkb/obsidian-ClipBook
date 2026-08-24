@@ -6,7 +6,7 @@ import {
 	MarkdownView,
 	TFile,
 } from "obsidian";
-import { ClipBookEntry } from "./types";
+import { ClipBookEntry, SectionRef } from "./types";
 import { buildEntryLine } from "./serializer";
 import {
 	insertEntryLine,
@@ -158,7 +158,7 @@ export async function undoDelete(
 
 export async function insertEntry(
 	target: SourceTarget,
-	section: string | null,
+	section: SectionRef,
 	key: string | null,
 	value: string,
 	masked: boolean

@@ -446,6 +446,10 @@
 	.clipbook-row,
 	.clipbook-entries,
 	.clipbook-entries-inner,
+	/* Named in full so it outranks the collapsed rule's 160ms delay, which is
+	   there to hold the rows visible for an animation no longer playing. Left
+	   in, it keeps collapsed rows in the tab order after they have gone. */
+	.clipbook-entries.clipbook-collapsed .clipbook-entries-inner,
 	.clipbook-container button.clipbook-delete-btn,
 	.clipbook-container button.clipbook-add-btn,
 	.clipbook-container button.clipbook-section-add {
@@ -454,6 +458,29 @@
 }
 
 /* --- Touch -------------------------------------------------------------- */
+
+/* Two questions, two queries. What size should a control be? — that follows
+   the pointer actually in use, so `pointer: coarse`. Can a control afford to
+   hide until hovered? — that follows whether a touchscreen exists at all, so
+   `any-pointer: coarse`. On a laptop with a touchscreen the first is false
+   while the second is true, and asking only the first leaves these controls
+   invisible and untappable for anyone who reaches up to the screen. */
+@media (any-pointer: coarse) {
+	/* Nothing to hover with, so they stay out. Revealing on :active is too
+	   late: the press has already hit-tested straight through the hidden
+	   button to the row, so the tap never reaches it. */
+	.clipbook-container button.clipbook-section-add,
+	.clipbook-container button.clipbook-add-btn {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* Delete stays ranked below copy — receding by weight, not by absence. */
+	.clipbook-container button.clipbook-delete-btn {
+		opacity: 0.55;
+		pointer-events: auto;
+	}
+}
 
 /* Coarse pointers need a bigger target, but not a bigger-looking control:
    the hit area grows, the icon does not. */
@@ -473,29 +500,14 @@
 		padding-bottom: 6px;
 	}
 
-	/* No hover to reveal it with. */
 	.clipbook-container button.clipbook-section-add {
 		width: 32px;
 		height: 32px;
-		opacity: 1;
-		pointer-events: auto;
 	}
 
 	.clipbook-container button.clipbook-add-btn {
 		min-height: 36px;
 		padding: 0 8px;
-		/* Nothing to hover with, so it stays out. */
-		opacity: 1;
-		pointer-events: auto;
-	}
-
-	/* There is no hover to reveal it with, and revealing it on :active is too
-	   late: the press has already hit-tested straight through the hidden
-	   button to the row, so the tap never reaches it. It stays present and
-	   tappable instead, receding by weight rather than by absence. */
-	.clipbook-container button.clipbook-delete-btn {
-		opacity: 0.55;
-		pointer-events: auto;
 	}
 
 	/* Labels above their fields, the way the app's own mobile settings read —

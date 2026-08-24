@@ -13,12 +13,22 @@
 export class CollapseRegistry {
 	private readonly state = new Map<string, boolean>();
 
-	get(sourcePath: string, section: string, fallback: boolean): boolean {
-		return this.state.get(key(sourcePath, section)) ?? fallback;
+	get(
+		sourcePath: string,
+		section: string,
+		occurrence: number,
+		fallback: boolean
+	): boolean {
+		return this.state.get(key(sourcePath, section, occurrence)) ?? fallback;
 	}
 
-	set(sourcePath: string, section: string, collapsed: boolean): void {
-		this.state.set(key(sourcePath, section), collapsed);
+	set(
+		sourcePath: string,
+		section: string,
+		occurrence: number,
+		collapsed: boolean
+	): void {
+		this.state.set(key(sourcePath, section, occurrence), collapsed);
 	}
 
 	clear(): void {
@@ -27,7 +37,9 @@ export class CollapseRegistry {
 }
 
 // A NUL cannot occur in a vault path or a section name, so no two different
-// pairs can collide on their joined key.
-function key(sourcePath: string, section: string): string {
-	return `${sourcePath}\u0000${section}`;
+// triples can collide on their joined key. The occurrence is part of it because
+// a note may hold two `[AWS]` headers, and collapsing one of them is not a
+// statement about the other.
+function key(sourcePath: string, section: string, occurrence: number): string {
+	return `${sourcePath}\u0000${section}\u0000${occurrence}`;
 }
