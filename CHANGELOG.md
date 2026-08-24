@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clipboard. Off by default; only ever clears the value ClipBook put there.
 - A test suite, a lint script, and a CI workflow that typechecks, lints, tests
   and builds every push and pull request.
+- An add button on each section header, which opens the quick-add form already
+  knowing which section you meant, next to the section rather than at the
+  bottom of the block.
 
 ### Fixed
 
@@ -80,6 +83,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The **+ Add** button fades in when the block is hovered or focused, rather
   than sitting under every block permanently. It stays put where there is no
   pointer to hover with, and while its form is open.
+- Each entry is one tab stop rather than four. A row is a toolbar: Tab moves
+  between rows, the arrow keys move between a row's key, value, copy and delete,
+  and Home and End jump to its ends. A block of fifteen entries cost sixty
+  presses to tab past before.
 
 ## [0.2.0] - 2026-08-21
 

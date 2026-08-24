@@ -59,11 +59,20 @@
 	margin-top: 14px;
 }
 
+/* The header line: the collapse toggle, and the section's own add button.
+   Siblings rather than nested, since a button inside a button is neither valid
+   nor activatable. */
+.clipbook-section-head {
+	display: flex;
+	align-items: center;
+}
+
 /* A quiet label, and nothing else: no fill, and no rule under it either. The
    uppercase weight and the gap above already say where a group begins, and a
    line every few rows competes with the entries for attention. */
 .clipbook-container button.clipbook-section-header {
-	width: 100%;
+	flex: 1 1 auto;
+	min-width: 0;
 	gap: 4px;
 	padding: 2px 8px 4px;
 	font-size: var(--font-ui-smaller, var(--font-smaller));
@@ -75,6 +84,34 @@
 
 .clipbook-container button.clipbook-section-header:hover {
 	color: var(--text-muted);
+}
+
+/* Adding to a section you can already see should not mean telling a form which
+   section you meant. Rests hidden like the other idle chrome. */
+.clipbook-container button.clipbook-section-add {
+	width: 24px;
+	height: 24px;
+	color: var(--text-faint);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease, color 120ms ease;
+}
+
+.clipbook-container button.clipbook-section-add svg {
+	width: 13px;
+	height: 13px;
+}
+
+.clipbook-section-head:hover .clipbook-section-add,
+.clipbook-section-head:focus-within .clipbook-section-add,
+.clipbook-container button.clipbook-section-add[aria-expanded="true"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.clipbook-container button.clipbook-section-add:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
 }
 
 /* One chevron, turned by the header's own ARIA state — so the open/closed
@@ -410,7 +447,8 @@
 	.clipbook-entries,
 	.clipbook-entries-inner,
 	.clipbook-container button.clipbook-delete-btn,
-	.clipbook-container button.clipbook-add-btn {
+	.clipbook-container button.clipbook-add-btn,
+	.clipbook-container button.clipbook-section-add {
 		transition: none;
 	}
 }
@@ -433,6 +471,14 @@
 	.clipbook-container button.clipbook-section-header {
 		min-height: 30px;
 		padding-bottom: 6px;
+	}
+
+	/* No hover to reveal it with. */
+	.clipbook-container button.clipbook-section-add {
+		width: 32px;
+		height: 32px;
+		opacity: 1;
+		pointer-events: auto;
 	}
 
 	.clipbook-container button.clipbook-add-btn {

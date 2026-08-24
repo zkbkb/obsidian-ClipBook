@@ -85,6 +85,15 @@ Editing is not supported for clipbook blocks nested inside callouts or list item
 
 Click the **+ Add** button at the bottom of any clipbook block to append a new entry. The inline form lets you choose a section, key, value, and mask toggle, then writes directly back to the markdown source. New entries are appended to the end of their section, and a section that does not exist yet is created.
 
+Each section header also has its own **+**, which opens the same form next to that section with the section already filled in — so adding to a section you can see does not mean telling a form which one you meant.
+
+## Keyboard
+
+Each entry is a single tab stop. Tab moves between entries; the arrow keys move
+between a row's key, value, copy and delete; Home and End jump to the ends of a
+row. Enter or Space activates whatever is focused — revealing a masked value,
+editing a key, copying. Escape hides a revealed value, and cancels an edit.
+
 ## Settings
 
 Open **Settings > ClipBook** to configure:

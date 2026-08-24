@@ -11,10 +11,50 @@ import { RenderContext } from "./context";
 
 let nextElementId = 0;
 
-export function renderQuickAddButton(
-	rc: RenderContext,
-	data: ClipBookData
-): void {
+/**
+ * The one quick-add form a block has, wherever it was opened from.
+ *
+ * A block-level button has to ask which section the entry belongs to; a button
+ * on a section header already knows. Both open the same form — the difference
+ * is only that one arrives with the answer, and that the form appears next to
+ * whatever opened it rather than always at the bottom of a long block.
+ */
+export class QuickAdd {
+	private formEl: HTMLElement | null = null;
+	private opener: HTMLElement | null = null;
+
+	constructor(
+		private readonly rc: RenderContext,
+		private readonly data: ClipBookData
+	) {}
+
+	/** Open under `host`, or close again if this opener already has it open. */
+	toggle(
+		opener: HTMLElement,
+		host: HTMLElement,
+		presetSection: string | null
+	): void {
+		const reopening = this.opener === opener && this.formEl !== null;
+		this.close();
+		if (reopening) return;
+
+		this.formEl = renderQuickAddForm(this.rc, this.data, host, presetSection, () =>
+			this.close()
+		);
+		this.opener = opener;
+		opener.setAttribute("aria-expanded", "true");
+	}
+
+	close(): void {
+		this.formEl?.remove();
+		this.formEl = null;
+		this.opener?.setAttribute("aria-expanded", "false");
+		this.opener = null;
+	}
+}
+
+/** The block-level button, which has to ask for a section. */
+export function renderQuickAddButton(rc: RenderContext, quickAdd: QuickAdd): void {
 	const addBtn = rc.containerEl.createEl("button", {
 		cls: "clipbook-btn clipbook-add-btn",
 		attr: { type: "button", "aria-expanded": "false" },
@@ -23,35 +63,49 @@ export function renderQuickAddButton(
 	setIcon(iconEl, "plus");
 	addBtn.createSpan({ text: "Add" });
 
-	let formEl: HTMLElement | null = null;
-	const closeForm = () => {
-		formEl?.remove();
-		formEl = null;
-		addBtn.setAttribute("aria-expanded", "false");
-	};
-
 	addBtn.addEventListener("click", () => {
-		if (formEl) {
-			closeForm();
-			return;
-		}
-		formEl = renderQuickAddForm(rc, data, closeForm);
-		addBtn.setAttribute("aria-expanded", "true");
+		quickAdd.toggle(addBtn, rc.containerEl, null);
+	});
+}
+
+/** The per-section button, which does not. */
+export function renderSectionAddButton(
+	hostEl: HTMLElement,
+	sectionName: string,
+	quickAdd: QuickAdd,
+	formHostEl: HTMLElement
+): void {
+	const addBtn = hostEl.createEl("button", {
+		cls: "clipbook-btn clipbook-icon-btn clipbook-section-add",
+		attr: {
+			type: "button",
+			"aria-expanded": "false",
+			"aria-label": `Add to ${sectionName}`,
+		},
+	});
+	setIcon(addBtn, "plus");
+
+	addBtn.addEventListener("click", (evt) => {
+		evt.stopPropagation();
+		quickAdd.toggle(addBtn, formHostEl, sectionName);
 	});
 }
 
 function renderQuickAddForm(
 	rc: RenderContext,
 	data: ClipBookData,
+	hostEl: HTMLElement,
+	presetSection: string | null,
 	onClose: () => void
 ): HTMLElement {
-	const formEl = rc.containerEl.createEl("form", { cls: "clipbook-add-form" });
+	const formEl = hostEl.createEl("form", { cls: "clipbook-add-form" });
 
 	const listId = `clipbook-sections-${nextElementId++}`;
 	const sectionInput = addField(formEl, "Section", {
 		placeholder: "(none — add as orphan)",
 		list: listId,
 	});
+	if (presetSection !== null) sectionInput.value = presetSection;
 
 	const existingSections = data
 		.map((s) => s.name)

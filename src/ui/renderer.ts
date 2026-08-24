@@ -2,7 +2,11 @@ import { MarkdownRenderChild, setIcon } from "obsidian";
 import { ClipBookData, ClipBookSection } from "../types";
 import { RenderContext } from "./context";
 import { renderEntry } from "./entry-row";
-import { renderQuickAddButton } from "./quick-add";
+import {
+	QuickAdd,
+	renderQuickAddButton,
+	renderSectionAddButton,
+} from "./quick-add";
 
 /** Everything a caller supplies; the block's lifetime and window are derived here. */
 export type RenderOptions = Omit<RenderContext, "lifecycle" | "win">;
@@ -26,21 +30,27 @@ export function renderClipBook(
 		win: containerEl.ownerDocument.defaultView ?? window,
 	};
 
+	const quickAdd = new QuickAdd(rc, data);
+
 	if (data.length === 0) {
 		containerEl.createDiv({
 			cls: "clipbook-empty",
 			text: "Empty clipbook block",
 		});
 	} else {
-		for (const section of data) renderSection(rc, section);
+		for (const section of data) renderSection(rc, section, quickAdd);
 	}
 
 	// Rendered unconditionally — an empty block is exactly where quick-add is
 	// most useful, and it used to be the one place the button was missing.
-	renderQuickAddButton(rc, data);
+	renderQuickAddButton(rc, quickAdd);
 }
 
-function renderSection(rc: RenderContext, section: ClipBookSection): void {
+function renderSection(
+	rc: RenderContext,
+	section: ClipBookSection,
+	quickAdd: QuickAdd
+): void {
 	const sectionEl = rc.containerEl.createDiv({ cls: "clipbook-section" });
 
 	// Orphan entries: no header, not collapsible.
@@ -50,7 +60,8 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 	}
 
 	const name = section.name;
-	const headerEl = sectionEl.createEl("button", {
+	const headRowEl = sectionEl.createDiv({ cls: "clipbook-section-head" });
+	const headerEl = headRowEl.createEl("button", {
 		cls: "clipbook-btn clipbook-section-header",
 		attr: { type: "button" },
 	});
@@ -63,6 +74,8 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 
 	// Two elements, not one: collapsing animates the outer element's grid row
 	// from `1fr` to `0fr`, which needs a single child to measure against.
+	renderSectionAddButton(headRowEl, name, quickAdd, sectionEl);
+
 	const entriesEl = sectionEl.createDiv({ cls: "clipbook-entries" });
 	const innerEl = entriesEl.createDiv({ cls: "clipbook-entries-inner" });
 
