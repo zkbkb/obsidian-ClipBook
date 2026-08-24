@@ -70,6 +70,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Obsidian typings are pinned to the `minAppVersion` floor, so using an API
   newer than the plugin claims to support is now a compile error rather than
   something to remember to check.
+- Collapsing and expanding a section animates rather than snapping, and the
+  chevron turns rather than being swapped for a different icon. Collapsed rows
+  leave the tab order, which `display: none` also did and a plain height
+  animation would not.
+- Section headers dropped the rule beneath them. The uppercase label and the gap
+  above already mark where a group starts; a line every few rows competed with
+  the entries.
+- The **+ Add** button fades in when the block is hovered or focused, rather
+  than sitting under every block permanently. It stays put where there is no
+  pointer to hover with, and while its form is open.
 
 ## [0.2.0] - 2026-08-21
 

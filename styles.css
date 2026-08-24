@@ -56,16 +56,16 @@
 /* --- Sections ----------------------------------------------------------- */
 
 .clipbook-section + .clipbook-section {
-	margin-top: 10px;
+	margin-top: 14px;
 }
 
-/* A quiet label, not a filled bar: the entries are the content, the section
-   name is only a divider with a word on it. */
+/* A quiet label, and nothing else: no fill, and no rule under it either. The
+   uppercase weight and the gap above already say where a group begins, and a
+   line every few rows competes with the entries for attention. */
 .clipbook-container button.clipbook-section-header {
 	width: 100%;
 	gap: 4px;
 	padding: 2px 8px 4px;
-	border-bottom: 1px solid var(--background-modifier-border);
 	font-size: var(--font-ui-smaller, var(--font-smaller));
 	font-weight: 600;
 	letter-spacing: 0.04em;
@@ -96,8 +96,29 @@
 	height: 13px;
 }
 
+/* Collapsing animates the grid row from 1fr to 0fr, which is why the entries
+   need a wrapper to measure. Engines without that interpolation still apply
+   0fr, so it snaps shut exactly as it used to. */
+.clipbook-entries {
+	display: grid;
+	grid-template-rows: 1fr;
+	transition: grid-template-rows 160ms ease;
+}
+
+.clipbook-entries-inner {
+	min-height: 0;
+	overflow: hidden;
+}
+
 .clipbook-entries.clipbook-collapsed {
-	display: none;
+	grid-template-rows: 0fr;
+}
+
+/* Collapsed rows must leave the tab order and the accessibility tree, not just
+   the view. The delay holds them visible for the length of the collapse. */
+.clipbook-entries.clipbook-collapsed .clipbook-entries-inner {
+	visibility: hidden;
+	transition: visibility 0s linear 160ms;
 }
 
 /* --- Entry rows --------------------------------------------------------- */
@@ -230,11 +251,25 @@
 
 /* --- Quick add ---------------------------------------------------------- */
 
+/* Chrome the reader only needs when reaching for it. Same trick as delete:
+   hovering the block is what makes it both visible and clickable, so a blind
+   click can never land on an invisible control. */
 .clipbook-container button.clipbook-add-btn {
 	gap: 5px;
 	margin-top: 6px;
 	padding: 4px 8px;
 	font-size: var(--font-ui-smaller, var(--font-smaller));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease, color 120ms ease,
+		background-color 120ms ease;
+}
+
+.clipbook-container:hover button.clipbook-add-btn,
+.clipbook-container:focus-within button.clipbook-add-btn,
+.clipbook-container button.clipbook-add-btn[aria-expanded="true"] {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 .clipbook-container button.clipbook-add-btn:hover {
@@ -372,7 +407,10 @@
 @media (prefers-reduced-motion: reduce) {
 	.clipbook-chevron,
 	.clipbook-row,
-	.clipbook-container button.clipbook-delete-btn {
+	.clipbook-entries,
+	.clipbook-entries-inner,
+	.clipbook-container button.clipbook-delete-btn,
+	.clipbook-container button.clipbook-add-btn {
 		transition: none;
 	}
 }
@@ -400,6 +438,9 @@
 	.clipbook-container button.clipbook-add-btn {
 		min-height: 36px;
 		padding: 0 8px;
+		/* Nothing to hover with, so it stays out. */
+		opacity: 1;
+		pointer-events: auto;
 	}
 
 	/* There is no hover to reveal it with, and revealing it on :active is too

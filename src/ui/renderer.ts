@@ -61,7 +61,10 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 	setIcon(chevronEl, "chevron-right");
 	headerEl.createSpan({ text: name });
 
+	// Two elements, not one: collapsing animates the outer element's grid row
+	// from `1fr` to `0fr`, which needs a single child to measure against.
 	const entriesEl = sectionEl.createDiv({ cls: "clipbook-entries" });
+	const innerEl = entriesEl.createDiv({ cls: "clipbook-entries-inner" });
 
 	let collapsed = rc.collapse.get(
 		rc.ctx.sourcePath,
@@ -83,5 +86,5 @@ function renderSection(rc: RenderContext, section: ClipBookSection): void {
 		paint();
 	});
 
-	for (const entry of section.entries) renderEntry(rc, entry, entriesEl);
+	for (const entry of section.entries) renderEntry(rc, entry, innerEl);
 }
