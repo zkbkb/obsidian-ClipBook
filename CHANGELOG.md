@@ -5,6 +5,40 @@ All notable changes to ClipBook will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Settings are now described through Obsidian 1.13's declarative settings API,
+  so they can be found by name from the settings search box. The pre-1.13
+  `display()` path stays for older builds; both are driven from one declaration
+  list, so they cannot drift apart.
+- A contributing guide, and a "Privacy and permissions" section in the README
+  setting out exactly what the plugin reads and writes: which notes, why the
+  *Copy value…* command walks the vault's file list, and why clearing the
+  clipboard involves reading it back.
+
+### Fixed
+
+- A write started from the delete button or the undo link could fail silently.
+  Both were async event listeners, so the promise was dropped: a note that
+  could not be saved reported nothing, and the delete button could stay
+  disabled. Every write started from a handler now reports its failure.
+- An invalid auto-hide or clipboard delay is refused as it is typed on Obsidian
+  1.13 and later, rather than being repaired when the settings pane closes.
+- The caret position for a click-to-edit is now requested through the standard
+  `caretPositionFromPoint`, falling back to the deprecated
+  `caretRangeFromPoint` only where that is all the engine has.
+
+### Changed
+
+- The Obsidian typings moved to 1.13. They now track the API surface the code
+  is written against rather than `minAppVersion`, which stays at 1.1.0 — no
+  supported version is dropped.
+- `no-misused-promises` and `no-floating-promises` are enabled, with the type
+  information they need. Neither was running before, which is why the two
+  listeners above went unnoticed.
+
 ## [0.2.1] - 2026-08-24
 
 ### Added

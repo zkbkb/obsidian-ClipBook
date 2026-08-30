@@ -17,6 +17,23 @@
  * losing its last four characters to the ellipsis — and those four are the
  * whole of what tells two masked keys apart. A narrower column would buy
  * density by making the values useless.
+ *
+ * Automated plugin scans report multicolumn as only partially supported. That
+ * reading comes from caniuse, which marks Chromium "partial" over corners of
+ * the spec none of this uses; `columns`, `column-gap`, `break-inside` and
+ * `column-span` are all fully supported in the Chromium behind Obsidian 1.1.0,
+ * the floor in the manifest. The finding is knowingly left standing, because
+ * the alternatives are worse rather than merely different:
+ *
+ *   - Grid `auto-fill` places sections row by row, so every row is as tall as
+ *     its tallest section. Measured against a block of seven typical groups it
+ *     was a third taller, most of that whitespace under the short ones.
+ *   - Flex column-wrap and a hand-balanced two-column split both reproduce this
+ *     layout, but neither can find the break on its own: they need the column
+ *     height measured in JS and recomputed on every resize, every collapse, and
+ *     every reveal — a revealed value wraps, which changes the height of the
+ *     section holding it. Reflowing on all of that is exactly what `columns`
+ *     is doing here for free.
  */
 .clipbook-container {
 	padding: 4px 0;

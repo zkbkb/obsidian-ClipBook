@@ -13,8 +13,15 @@
 		"check": "npm run typecheck && npm run lint && npm run test",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
-	"keywords": [],
-	"author": "",
+	"keywords": [
+		"obsidian",
+		"obsidian-plugin",
+		"clipboard",
+		"snippets",
+		"api-keys",
+		"secrets"
+	],
+	"author": "Kaibin Zhang",
 	"license": "MIT",
 	"devDependencies": {
 		"@eslint/js": "^9.17.0",

@@ -127,6 +127,33 @@ screenful of entries: open the command palette, type part of a key or a note
 name, press Enter. Only blocks at the top level of a note are indexed — one
 nested inside a callout or a list item is not found.
 
+## Privacy and permissions
+
+ClipBook makes no network requests of any kind. Everything below happens on your
+own machine, against your own vault.
+
+**Your notes.** Rendering a block reads that block. Editing, adding or deleting
+an entry writes back to the note the block lives in, through Obsidian's own
+`Vault.process`, and only to the lines of that block.
+
+**Every note in the vault, for one command.** *ClipBook: Copy value…* searches
+across the whole vault, so it walks the list of markdown files to build its
+index. It is built on demand when you run the command and then thrown away —
+nothing is watched or kept in the background. Files are skipped before being
+read at all unless Obsidian's metadata cache already says they contain a code
+block, and a file that is read but does not contain the word `clipbook` is
+dropped immediately. Reads go through `cachedRead`, so nothing is loaded from
+disk that Obsidian does not already have.
+
+**The clipboard.** Copying a value writes it to the system clipboard — that is
+what the plugin is for. If you switch on *Clear the clipboard after copying*,
+ClipBook also *reads* the clipboard once when the delay expires. That read
+exists so it can compare what is there against what it put there and stop if
+they differ: it will only ever erase its own value, never something you copied
+from somewhere else in the meantime. Nothing read from the clipboard is stored
+or sent anywhere. Where the platform refuses the read — a mobile webview
+outside a user gesture — the clear is quietly abandoned rather than guessed at.
+
 ## Installation
 
 Copy `main.js`, `manifest.json`, and `styles.css` to your vault at:
@@ -146,14 +173,22 @@ npm run check   # typecheck, lint and test — what CI runs
 npm test        # tests only
 ```
 
-The Obsidian typings are pinned to the `minAppVersion` in `manifest.json`, so an
-API newer than the plugin claims to support fails to compile. Raising one means
-raising the other.
+The Obsidian typings track the API surface the code is written against, which is
+ahead of the `minAppVersion` in `manifest.json`. Anything newer than that floor
+has to be guarded at runtime rather than assumed: an additive hook Obsidian only
+calls on a new enough build is safe on its own, but calling a method that older
+builds do not have needs a `typeof` check, and a settings tab written against
+the 1.13 declarative API still needs its `display()` fallback. Where the two
+paths would otherwise drift, drive them from one declaration — see
+`src/settings-defs.ts`.
 
 Keep example values in docs and fixtures obviously fake — `EXAMPLE-0000…` rather
 than something shaped like a real key. Secret scanners match on shape and on
 nearby words like "token", so a realistic-looking placeholder produces a real
 alert, and repeated false alerts are how a scanner stops being read.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the test conventions, the policy on
+API versions, and the release process.
 
 ## Known limitations
 
