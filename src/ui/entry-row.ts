@@ -82,9 +82,16 @@ function renderKey(
 					restore();
 					return;
 				}
-				void write(
-					replaceEntry(rc, entry, newKey === "" ? null : newKey, entry.value),
-					restore
+				startWrite(() =>
+					write(
+						replaceEntry(
+							rc,
+							entry,
+							newKey === "" ? null : newKey,
+							entry.value
+						),
+						restore
+					)
 				);
 			},
 			restore
@@ -133,7 +140,9 @@ function renderValue(
 				// Re-mask immediately rather than leaving the new plaintext on
 				// screen until the block re-renders.
 				maskedValue?.paint();
-				void write(replaceEntry(rc, entry, entry.key, newValue), restore);
+				startWrite(() =>
+					write(replaceEntry(rc, entry, entry.key, newValue), restore)
+				);
 			},
 			restore
 		);
@@ -210,22 +219,25 @@ function renderDeleteButton(
 	// A second click before the first write lands would be rejected by the
 	// writer's line check and report a spurious "the note changed" instead.
 	let deleting = false;
-	deleteBtn.addEventListener("click", async (evt) => {
+	deleteBtn.addEventListener("click", (evt) => {
 		evt.stopPropagation();
 		if (deleting) return;
 		deleting = true;
 		deleteBtn.disabled = true;
-		try {
-			const result = await deleteEntry(rc, entry);
-			if (result.failure !== null) {
-				new Notice(describeWriteFailure(result.failure));
-				return;
+		startWrite(
+			async () => {
+				const result = await deleteEntry(rc, entry);
+				if (result.failure !== null) {
+					new Notice(describeWriteFailure(result.failure));
+					return;
+				}
+				offerUndo(rc, entry, result.undo);
+			},
+			() => {
+				deleting = false;
+				deleteBtn.disabled = false;
 			}
-			offerUndo(rc, entry, result.undo);
-		} finally {
-			deleting = false;
-			deleteBtn.disabled = false;
-		}
+		);
 	});
 }
 
@@ -253,11 +265,13 @@ function offerUndo(
 	});
 
 	const notice = new Notice(message, UNDO_WINDOW_MS);
-	undoEl.addEventListener("click", async (evt) => {
+	undoEl.addEventListener("click", (evt) => {
 		evt.preventDefault();
 		notice.hide();
-		const failure = await undoDelete(rc.app, deleted);
-		if (failure !== null) new Notice(describeWriteFailure(failure));
+		startWrite(async () => {
+			const failure = await undoDelete(rc.app, deleted);
+			if (failure !== null) new Notice(describeWriteFailure(failure));
+		});
 	});
 }
 
@@ -286,6 +300,24 @@ function onActivate(
 		if (isEditing() || evt.detail !== 0) return;
 		edit();
 	});
+}
+
+/**
+ * Start a write from a synchronous event handler.
+ *
+ * A DOM listener returns void, so handing one an async function throws the
+ * promise away: nothing orders the work, and a rejected write — the note could
+ * not be saved at all — is reported nowhere. Every write started from a handler
+ * goes through here instead. `after` runs however the work settles, so a
+ * control disabled for the duration always comes back.
+ */
+function startWrite(work: () => Promise<void>, after?: () => void): void {
+	void work()
+		.catch((error: unknown) => {
+			console.error("ClipBook: The write failed.", error);
+			new Notice("Failed to write to the note.");
+		})
+		.finally(() => after?.());
 }
 
 /** Surface a failed write to the user and let the caller put the UI back. */

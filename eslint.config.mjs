@@ -23,6 +23,22 @@ export default tseslint.config(
 		},
 	},
 	{
+		// Handing an async function to something that expects `void` throws the
+		// promise away: the work is unordered and a rejection surfaces nowhere.
+		// Catching that needs type information, so these two rules — and the
+		// parser service they depend on — apply to the typed sources only.
+		// Everything else here is checked without it, which is why the plugin
+		// shipped a settings tab full of `onChange(async ...)`.
+		files: ["src/**/*.ts", "tests/**/*.ts"],
+		languageOptions: {
+			parserOptions: { projectService: true },
+		},
+		rules: {
+			"@typescript-eslint/no-misused-promises": "error",
+			"@typescript-eslint/no-floating-promises": "error",
+		},
+	},
+	{
 		// Config and build scripts run in Node, not in Obsidian.
 		files: ["*.mjs", "*.config.*"],
 		languageOptions: {
