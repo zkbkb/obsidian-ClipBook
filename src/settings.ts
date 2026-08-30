@@ -2,18 +2,16 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type { SettingDefinitionItem } from "obsidian";
 import type ClipBookPlugin from "./main";
 import {
-	ClipBookSettings,
 	DEFAULT_SETTINGS,
+	DelayMemory,
 	DurationDecl,
-	DurationKey,
 	SETTING_DECLS,
 	SettingDecl,
-	SettingKey,
 	ToggleDecl,
-	durationForEnabledKey,
+	delayFor,
 	enabledKey,
-	isDurationKey,
-	isSettingKey,
+	readControl,
+	writeControl,
 } from "./settings-defs";
 
 export type { ClipBookSettings } from "./settings-defs";
@@ -34,7 +32,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 	 * closure: on 1.13 the tab is built from definitions and `display()` never
 	 * runs, so there is no closure to hold it.
 	 */
-	private readonly lastDelay = new Map<DurationKey, number>();
+	private readonly lastDelay: DelayMemory = new Map();
 
 	/** Only ever filled by the `display()` fallback — see `hide()`. */
 	private durationFields: DurationField[] = [];
@@ -105,34 +103,15 @@ export class ClipBookSettingTab extends PluginSettingTab {
 	}
 
 	override getControlValue(key: string): unknown {
-		const duration = durationForEnabledKey(key);
-		if (duration !== null) return this.plugin.settings[duration] > 0;
-		if (isSettingKey(key)) return this.plugin.settings[key];
-		return undefined;
+		return readControl(this.plugin.settings, key);
 	}
 
 	override async setControlValue(key: string, value: unknown): Promise<void> {
-		const duration = durationForEnabledKey(key);
-		if (duration !== null) {
-			if (typeof value !== "boolean") return;
-			this.setEnabled(duration, value);
-			await this.persist();
-			// The delay row's `visible` predicate reads the field just written.
-			this.refreshVisibility();
-			return;
-		}
-
-		if (!isSettingKey(key)) return;
-		if (typeof value !== typeof DEFAULT_SETTINGS[key]) return;
-		if (typeof value === "number") {
-			if (!Number.isFinite(value) || value < 1) return;
-			if (isDurationKey(key)) this.lastDelay.set(key, value);
-		}
-		// The value has been checked against the stored field's own type; the
-		// index signature is what the type alias exists for.
-		const target: Record<string, unknown> = this.plugin.settings;
-		target[key] = value;
+		if (!this.apply(key, value)) return;
 		await this.persist();
+		// A duration's switch decides whether its delay row is shown at all,
+		// and that predicate reads the field just written.
+		this.refreshVisibility();
 	}
 
 	// --- Before 1.13: the tab draws itself ---------------------------------
@@ -159,8 +138,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			.setDesc(decl.desc)
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings[decl.key]).onChange((value) => {
-					this.write(decl.key, value);
-					void this.persist();
+					this.save(decl.key, value);
 				})
 			);
 	}
@@ -177,8 +155,7 @@ export class ClipBookSettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.plugin.settings[decl.key] > 0)
 					.onChange((value) => {
-						this.setEnabled(decl.key, value);
-						void this.persist();
+						this.save(enabledKey(decl.key), value);
 						delaySetting.settingEl.toggle(value);
 					})
 			);
@@ -190,13 +167,11 @@ export class ClipBookSettingTab extends PluginSettingTab {
 				this.durationFields.push({ inputEl: text.inputEl, decl });
 				text
 					.setPlaceholder(String(decl.fallback))
-					.setValue(String(this.delayFor(decl.key)))
+					.setValue(String(this.delay(decl.key)))
 					.onChange((raw) => {
-						const seconds = parseInt(raw, 10);
-						if (!Number.isFinite(seconds) || seconds < 1) return;
-						this.lastDelay.set(decl.key, seconds);
-						this.write(decl.key, seconds);
-						void this.persist();
+						// An unusable delay is rejected by `save`, so a half-typed
+						// number does not overwrite the stored one.
+						this.save(decl.key, parseInt(raw, 10));
 					});
 			});
 
@@ -215,35 +190,29 @@ export class ClipBookSettingTab extends PluginSettingTab {
 			if (this.plugin.settings[decl.key] === 0) continue;
 			const seconds = parseInt(inputEl.value, 10);
 			if (Number.isFinite(seconds) && seconds >= 1) continue;
-			this.write(decl.key, decl.fallback);
-			repaired = true;
+			if (this.apply(decl.key, decl.fallback)) repaired = true;
 		}
 		if (repaired) void this.persist();
 	}
 
 	// --- Shared ------------------------------------------------------------
 
-	/** Turn a duration on, restoring its delay, or off, remembering it. */
-	private setEnabled(key: DurationKey, on: boolean): void {
-		const current = this.plugin.settings[key];
-		if (current > 0) this.lastDelay.set(key, current);
-		this.write(key, on ? this.delayFor(key) : 0);
+	/**
+	 * Apply a control change. Both render paths go through here, so the
+	 * declarative controls and the ones `display()` draws agree on what a key
+	 * means and which values they refuse.
+	 */
+	private apply(key: string, value: unknown): boolean {
+		return writeControl(this.plugin.settings, this.lastDelay, key, value);
 	}
 
-	/** The delay to show for a duration that is off: the last one, or its default. */
-	private delayFor(key: DurationKey): number {
-		const remembered = this.lastDelay.get(key);
-		if (remembered !== undefined && remembered > 0) return remembered;
-		const current = this.plugin.settings[key];
-		if (current > 0) return current;
-		const decl = SETTING_DECLS.find(
-			(d): d is DurationDecl => d.kind === "duration" && d.key === key
-		);
-		return decl?.fallback ?? DEFAULT_SETTINGS[key];
+	/** Apply and save, for the `display()` path, which cannot await. */
+	private save(key: string, value: unknown): void {
+		if (this.apply(key, value)) void this.persist();
 	}
 
-	private write<K extends SettingKey>(key: K, value: ClipBookSettings[K]): void {
-		this.plugin.settings[key] = value;
+	private delay(key: DurationDecl["key"]): number {
+		return delayFor(this.plugin.settings, this.lastDelay, key);
 	}
 
 	/**

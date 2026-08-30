@@ -172,3 +172,88 @@ export const SETTING_DECLS: readonly SettingDecl[] = [
 		desc: "Whether the mask checkbox is checked by default in the quick-add form",
 	},
 ];
+
+/**
+ * The last non-zero delay for each duration, so switching one off and on again
+ * does not lose it.
+ */
+export type DelayMemory = Map<DurationKey, number>;
+
+function durationDecl(key: DurationKey): DurationDecl | undefined {
+	return SETTING_DECLS.find(
+		(decl): decl is DurationDecl => decl.kind === "duration" && decl.key === key
+	);
+}
+
+function assign<K extends SettingKey>(
+	settings: ClipBookSettings,
+	key: K,
+	value: ClipBookSettings[K]
+): void {
+	settings[key] = value;
+}
+
+/**
+ * The delay to show, and to restore when a duration is switched back on: the
+ * stored one, else the last one seen, else the declared fallback.
+ */
+export function delayFor(
+	settings: ClipBookSettings,
+	remembered: DelayMemory,
+	key: DurationKey
+): number {
+	const stored = settings[key];
+	if (stored > 0) return stored;
+	const last = remembered.get(key);
+	if (last !== undefined && last > 0) return last;
+	return durationDecl(key)?.fallback ?? DEFAULT_SETTINGS[key];
+}
+
+/**
+ * What a control should currently show. Undefined for a key this plugin does
+ * not own — Obsidian addresses controls by string, and only the definitions
+ * built here put a key into circulation, but nothing guarantees that.
+ */
+export function readControl(settings: ClipBookSettings, key: string): unknown {
+	const duration = durationForEnabledKey(key);
+	if (duration !== null) return settings[duration] > 0;
+	if (isSettingKey(key)) return settings[key];
+	return undefined;
+}
+
+/**
+ * Apply a control change to `settings`.
+ *
+ * Returns false, having changed nothing, for a key this plugin does not own or
+ * a value that cannot be stored — an unusable delay included, since a
+ * zero or negative one would mean "off" or a timer that never fires. A caller
+ * can skip the save on false.
+ */
+export function writeControl(
+	settings: ClipBookSettings,
+	remembered: DelayMemory,
+	key: string,
+	value: unknown
+): boolean {
+	const duration = durationForEnabledKey(key);
+	if (duration !== null) {
+		if (typeof value !== "boolean") return false;
+		// Remember the delay before switching off, which overwrites it.
+		const current = settings[duration];
+		if (current > 0) remembered.set(duration, current);
+		assign(settings, duration, value ? delayFor(settings, remembered, duration) : 0);
+		return true;
+	}
+
+	if (!isSettingKey(key)) return false;
+	if (typeof value !== typeof DEFAULT_SETTINGS[key]) return false;
+	if (typeof value === "number") {
+		if (!Number.isFinite(value) || value < 1) return false;
+		if (isDurationKey(key)) remembered.set(key, value);
+	}
+	// The value has been checked against the stored field's own type; writing
+	// through the index signature is what the type alias exists for.
+	const target: Record<string, unknown> = settings;
+	target[key] = value;
+	return true;
+}
