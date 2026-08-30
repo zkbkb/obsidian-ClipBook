@@ -12,7 +12,7 @@ import {
 import { registerCommands } from "./commands";
 
 export default class ClipBookPlugin extends Plugin {
-	settings!: ClipBookSettings;
+	override settings!: ClipBookSettings;
 	private readonly reveals = new RevealRegistry();
 	private readonly collapse = new CollapseRegistry();
 	private readonly clipboard = new ClipboardGuard(window);
