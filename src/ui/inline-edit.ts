@@ -96,10 +96,32 @@ export function caretIndexFromPoint(
 	el: HTMLElement,
 	evt: MouseEvent
 ): number | undefined {
-	const doc = el.ownerDocument;
-	if (typeof doc.caretRangeFromPoint !== "function") return undefined;
+	const caret = caretPoint(el.ownerDocument, evt.clientX, evt.clientY);
+	if (!caret || !el.contains(caret.node)) return undefined;
+	return caret.offset;
+}
 
-	const range = doc.caretRangeFromPoint(evt.clientX, evt.clientY);
-	if (!range || !el.contains(range.startContainer)) return undefined;
-	return range.startOffset;
+/**
+ * The caret position at a viewport point, from whichever API the engine has.
+ *
+ * `caretPositionFromPoint` is the standard method. `caretRangeFromPoint` is
+ * the older WebKit one it replaced and is deprecated, but it is what shipped
+ * first in the engines Obsidian runs on and is still the only one on the
+ * oldest builds this plugin supports — so it stays, behind the standard rather
+ * than in front of it.
+ */
+function caretPoint(
+	doc: Document,
+	x: number,
+	y: number
+): { node: Node; offset: number } | null {
+	if (typeof doc.caretPositionFromPoint === "function") {
+		const position = doc.caretPositionFromPoint(x, y);
+		return position && { node: position.offsetNode, offset: position.offset };
+	}
+	if (typeof doc.caretRangeFromPoint === "function") {
+		const range = doc.caretRangeFromPoint(x, y);
+		return range && { node: range.startContainer, offset: range.startOffset };
+	}
+	return null;
 }
